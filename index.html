@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSC Text to Speech</title>
+    <!-- p5.js and its addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
+    <!-- OSC library -->
+    <script src="https://cdn.jsdelivr.net/npm/osc@2.4.4/dist/osc-browser.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>OSC Text to Speech</h1>
+        <div class="input-group">
+            <label for="apiKey">Whisper API Key:</label>
+            <input type="text" id="apiKey" placeholder="Enter your Whisper API key">
+        </div>
+        <div class="input-group">
+            <label for="oscAddress">OSC Address:</label>
+            <input type="text" id="oscAddress" value="127.0.0.1" placeholder="OSC IP Address">
+        </div>
+        <div class="input-group">
+            <label for="oscPort">OSC Port:</label>
+            <input type="text" id="oscPort" value="57120" placeholder="OSC Port">
+        </div>
+        <div class="input-group">
+            <button id="startRecord">Start Recording</button>
+            <button id="stopRecord" disabled>Stop Recording</button>
+        </div>
+        <div class="input-group">
+            <label>Output:</label>
+            <div id="output"></div>
+        </div>
+    </div>
+    <script src="sketch.js"></script>
+</body>
+</html> 
