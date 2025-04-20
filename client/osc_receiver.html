@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSC Receiver Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #messages {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-height: 300px;
+            max-height: 500px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: #e9f7ef;
+        }
+        .message.start {
+            background-color: #d4edda;
+        }
+        .message.stop {
+            background-color: #f8d7da;
+        }
+        .message.text {
+            background-color: #cce5ff;
+        }
+        #connectionStatus {
+            margin-top: 10px;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        .connected {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .disconnected {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>OSC Receiver Client</h1>
+        <div class="input-group">
+            <label for="wsServer">WebSocket Server:</label>
+            <input type="text" id="wsServer" value="ws://localhost:8080" placeholder="WebSocket Server URL">
+        </div>
+        <div class="input-group">
+            <label for="oscAddress">OSC Address:</label>
+            <input type="text" id="oscAddress" value="127.0.0.1" placeholder="OSC IP Address">
+        </div>
+        <div class="input-group">
+            <label for="oscPort">OSC Port:</label>
+            <input type="text" id="oscPort" value="57120" placeholder="OSC Port">
+        </div>
+        <div id="connectionStatus" class="disconnected">Disconnected</div>
+        <div class="input-group">
+            <button id="connectBtn">Connect</button>
+            <button id="disconnectBtn" disabled>Disconnect</button>
+            <button id="clearBtn">Clear Messages</button>
+        </div>
+        <div class="input-group">
+            <label>Messages:</label>
+            <div id="messages"></div>
+        </div>
+    </div>
+
+    <script>
+        let ws;
+        let isConnected = false;
+        let wsServer = 'ws://localhost:8080';
+        let oscAddress = '127.0.0.1';
+        let oscPort = 57120;
+
+        // DOM elements
+        const wsServerInput = document.getElementById('wsServer');
+        const oscAddressInput = document.getElementById('oscAddress');
+        const oscPortInput = document.getElementById('oscPort');
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const messagesDiv = document.getElementById('messages');
+        const connectionStatus = document.getElementById('connectionStatus');
+
+        // Event listeners
+        wsServerInput.addEventListener('change', (e) => wsServer = e.target.value);
+        oscAddressInput.addEventListener('change', (e) => oscAddress = e.target.value);
+        oscPortInput.addEventListener('change', (e) => oscPort = parseInt(e.target.value));
+        connectBtn.addEventListener('click', connect);
+        disconnectBtn.addEventListener('click', disconnect);
+        clearBtn.addEventListener('click', clearMessages);
+
+        function connect() {
+            if (ws) {
+                ws.close();
+            }
+
+            ws = new WebSocket(wsServer);
+
+            ws.onopen = function() {
+                isConnected = true;
+                updateConnectionStatus();
+                addMessage('Connected to WebSocket server', 'system');
+                
+                // Send registration message
+                const message = {
+                    type: 'register',
+                    oscAddress: oscAddress,
+                    oscPort: oscPort
+                };
+                ws.send(JSON.stringify(message));
+            };
+
+            ws.onclose = function() {
+                isConnected = false;
+                updateConnectionStatus();
+                addMessage('Disconnected from WebSocket server', 'system');
+            };
+
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+                addMessage('WebSocket error occurred', 'system');
+            };
+
+            ws.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'osc') {
+                        handleOSCMessage(data);
+                    }
+                } catch (error) {
+                    console.error('Error parsing message:', error);
+                }
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+            }
+        }
+
+        function updateConnectionStatus() {
+            if (isConnected) {
+                connectionStatus.textContent = 'Connected';
+                connectionStatus.className = 'connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                connectionStatus.textContent = 'Disconnected';
+                connectionStatus.className = 'disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        function handleOSCMessage(data) {
+            const address = data.address;
+            const value = data.value;
+            
+            let messageClass = '';
+            let messageText = '';
+            
+            if (address === '/startRecording') {
+                messageClass = 'start';
+                messageText = 'Recording started';
+            } else if (address === '/stopRecording') {
+                messageClass = 'stop';
+                messageText = 'Recording stopped';
+            } else if (address === '/text') {
+                messageClass = 'text';
+                messageText = `Transcribed text: ${value}`;
+            } else {
+                messageText = `Received message at ${address}: ${value}`;
+            }
+            
+            addMessage(messageText, messageClass);
+        }
+
+        function addMessage(text, className = '') {
+            const messageElement = document.createElement('div');
+            messageElement.className = `message ${className}`;
+            messageElement.textContent = text;
+            messagesDiv.appendChild(messageElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function clearMessages() {
+            messagesDiv.innerHTML = '';
+        }
+    </script>
+</body>
+</html> 

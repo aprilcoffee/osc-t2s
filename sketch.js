@@ -1,10 +1,12 @@
 let recorder;
 let soundFile;
-let oscClient;
+let ws;
 let isRecording = false;
 let apiKey = '';
+let wsServer = 'ws://localhost:8080';
 let oscAddress = '127.0.0.1';
 let oscPort = 57120;
+let isConnected = false;
 
 function setup() {
     // Setup recording
@@ -15,6 +17,7 @@ function setup() {
     const startButton = document.getElementById('startRecord');
     const stopButton = document.getElementById('stopRecord');
     const apiKeyInput = document.getElementById('apiKey');
+    const wsServerInput = document.getElementById('wsServer');
     const oscAddressInput = document.getElementById('oscAddress');
     const oscPortInput = document.getElementById('oscPort');
 
@@ -22,30 +25,65 @@ function setup() {
     startButton.addEventListener('click', startRecording);
     stopButton.addEventListener('click', stopRecording);
     apiKeyInput.addEventListener('change', (e) => apiKey = e.target.value);
-    oscAddressInput.addEventListener('change', (e) => {
-        oscAddress = e.target.value;
-        setupOSC();
+    wsServerInput.addEventListener('change', (e) => {
+        wsServer = e.target.value;
+        setupWebSocket();
     });
-    oscPortInput.addEventListener('change', (e) => {
-        oscPort = parseInt(e.target.value);
-        setupOSC();
-    });
+    oscAddressInput.addEventListener('change', (e) => oscAddress = e.target.value);
+    oscPortInput.addEventListener('change', (e) => oscPort = parseInt(e.target.value));
 
-    // Initial OSC setup
-    setupOSC();
+    // Initial WebSocket setup
+    setupWebSocket();
 }
 
-function setupOSC() {
-    // Create new OSC client
-    oscClient = new OSC.Client({
-        host: oscAddress,
-        port: oscPort
-    });
+function setupWebSocket() {
+    if (ws) {
+        ws.close();
+    }
+
+    ws = new WebSocket(wsServer);
+
+    ws.onopen = function() {
+        isConnected = true;
+        updateConnectionStatus();
+        document.getElementById('output').innerHTML += '<p>Connected to WebSocket server</p>';
+    };
+
+    ws.onclose = function() {
+        isConnected = false;
+        updateConnectionStatus();
+        document.getElementById('output').innerHTML += '<p>Disconnected from WebSocket server</p>';
+    };
+
+    ws.onerror = function(error) {
+        console.error('WebSocket error:', error);
+        document.getElementById('output').innerHTML += '<p>WebSocket error occurred</p>';
+    };
+
+    ws.onmessage = function(event) {
+        console.log('Received:', event.data);
+    };
+}
+
+function updateConnectionStatus() {
+    const statusElement = document.getElementById('connectionStatus');
+    if (isConnected) {
+        statusElement.textContent = 'Connected';
+        statusElement.className = 'connected';
+    } else {
+        statusElement.textContent = 'Disconnected';
+        statusElement.className = 'disconnected';
+    }
 }
 
 function startRecording() {
     if (!apiKey) {
         alert('Please enter your Whisper API key first');
+        return;
+    }
+
+    if (!isConnected) {
+        alert('Please connect to the WebSocket server first');
         return;
     }
 
@@ -115,9 +153,20 @@ function processAudio() {
 }
 
 function sendOSCMessage(address, value) {
+    if (!isConnected) {
+        console.error('Not connected to WebSocket server');
+        return;
+    }
+
     try {
-        const message = new OSC.Message(address, value);
-        oscClient.send(message);
+        const message = {
+            type: 'osc',
+            address: address,
+            value: value,
+            oscAddress: oscAddress,
+            oscPort: oscPort
+        };
+        ws.send(JSON.stringify(message));
         console.log(`Sent OSC message to ${oscAddress}:${oscPort} - ${address}: ${value}`);
     } catch (error) {
         console.error('Error sending OSC message:', error);

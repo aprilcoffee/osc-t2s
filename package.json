@@ -1,0 +1,13 @@
+{
+  "name": "osc-t2s-server",
+  "version": "1.0.0",
+  "description": "WebSocket server for OSC Text to Speech",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.16.0",
+    "node-osc": "^8.0.12"
+  }
+} 
