@@ -30,23 +30,40 @@ npm install
 npm start
 ```
 
-The server will run on port 8080 by default.
+The server will run on port 8080 by default and will be accessible from other devices on your network.
 
 ### 2. Web Application Setup
 
 There are two ways to run the web application:
 
-#### Method 1: Using Python's built-in HTTP server
+#### Method 1: Using npm (recommended for external access)
+```bash
+npm run serve
+```
+
+This will start a web server on port 8000 that is accessible from other devices on your network.
+
+#### Method 2: Using Python's built-in HTTP server
 1. Open a terminal in the project directory
 2. Run one of these commands:
    - Python 3: `python -m http.server 8000`
    - Python 2: `python -m SimpleHTTPServer 8000`
 3. Open your browser and navigate to `http://localhost:8000`
 
-#### Method 2: Using any web server
+#### Method 3: Using any web server
 Simply place the files in your web server's directory and access them through your browser.
 
-### 3. External Access
+### 3. Running Both Server and Web Interface
+
+To run both the WebSocket server and web interface with a single command:
+
+```bash
+npm run dev
+```
+
+This will start both servers concurrently, making the entire application accessible from other devices.
+
+### 4. External Access
 
 To allow external access:
 
@@ -56,7 +73,9 @@ To allow external access:
    - Web interface: `http://your-server-ip:8000`
    - WebSocket server: `ws://your-server-ip:8080`
 
-### 4. Testing with Example Clients
+When you start the server, it will display the IP address and ports that can be used to access it from other devices.
+
+### 5. Testing with Example Clients
 
 The `client` folder contains example clients that can be used to test the system:
 
