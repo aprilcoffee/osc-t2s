@@ -3,159 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OSC Text to Speech</title>
-    <!-- p5.js and its addons -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
-    <!-- WebSocket client -->
-    <script src="https://cdn.jsdelivr.net/npm/websocket@1.0.34/websocket.min.js"></script>
+    <title>Speech to OSC</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f0f0f0;
-        }
-        .container {
             max-width: 800px;
             margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
             background-color: white;
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .input-group {
-            margin-bottom: 15px;
+        .status {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
         }
-        label {
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .ready { background-color: #4CAF50; }
+        .recording { background-color: #ff9800; }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        #startBtn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #stopBtn {
+            background-color: #f44336;
+            color: white;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .settings {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .settings label {
             display: block;
             margin-bottom: 5px;
-            font-weight: bold;
         }
-        input[type="text"] {
+        .settings input {
             width: 100%;
             padding: 8px;
             margin-bottom: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
         }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-right: 10px;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        #output {
+        #transcription {
             margin-top: 20px;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
             min-height: 100px;
-            max-height: 300px;
-            overflow-y: auto;
+            background-color: #f9f9f9;
         }
-        #connectionStatus {
-            margin-top: 10px;
-            padding: 5px;
-            border-radius: 4px;
-        }
-        .connected {
-            background-color: #dff0d8;
-            color: #3c763d;
-        }
-        .disconnected {
-            background-color: #f2dede;
-            color: #a94442;
-        }
-        .advanced-settings {
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            display: none;
-        }
-        .advanced-toggle {
-            margin-top: 10px;
-            cursor: pointer;
-            color: #666;
-        }
-        .api-selector {
+        .api-key-group {
             margin-bottom: 15px;
         }
+        .error-message {
+            color: #f44336;
+            margin-top: 5px;
+            font-size: 14px;
+            display: none;
+        }
+        .api-selector {
+            margin-bottom: 20px;
+        }
         .api-selector label {
-            display: inline-block;
             margin-right: 15px;
+            cursor: pointer;
         }
         .api-selector input[type="radio"] {
             margin-right: 5px;
         }
-        .api-key-input {
+        .api-options {
+            margin-top: 15px;
+        }
+        .api-option {
             display: none;
+        }
+        .api-option.active {
+            display: block;
+        }
+        .button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        #googleAuthBtn {
+            background-color: #4285f4;
+            color: white;
+        }
+        #googleAuthBtn.connected {
+            background-color: #34a853;
+        }
+        .info {
+            background-color: #e3f2fd;
+            color: #0d47a1;
+        }
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>OSC Text to Speech</h1>
+        <h1>Speech to OSC</h1>
         
+        <div class="status">
+            <div id="statusIndicator" class="status-indicator ready"></div>
+            <span id="statusText">Ready</span>
+        </div>
+
         <div class="api-selector">
             <label>
-                <input type="radio" name="apiType" value="whisper" checked> Whisper API
+                <input type="radio" name="apiType" value="google" checked> Google Cloud Speech Recognition
             </label>
             <label>
-                <input type="radio" name="apiType" value="google"> Google Cloud Speech Recognition
+                <input type="radio" name="apiType" value="whisper"> Whisper API
             </label>
         </div>
-        
-        <div class="input-group" id="whisperKeyGroup">
-            <label for="whisperApiKey">Whisper API Key:</label>
-            <input type="text" id="whisperApiKey" placeholder="Enter your Whisper API key">
-        </div>
-        
-        <div class="input-group api-key-input" id="googleKeyGroup">
-            <label for="googleApiKey">Google Cloud API Key:</label>
-            <input type="text" id="googleApiKey" placeholder="Enter your Google Cloud API key">
-        </div>
-        
-        <div id="connectionStatus" class="disconnected">Disconnected</div>
-        
-        <div class="input-group">
-            <button id="startRecord">Start Recording</button>
-            <button id="stopRecord" disabled>Stop Recording</button>
-        </div>
-        
-        <div class="input-group">
-            <label>Output:</label>
-            <div id="output"></div>
-        </div>
-        
-        <div class="advanced-toggle" id="advancedToggle">Show Advanced Settings</div>
-        
-        <div class="advanced-settings" id="advancedSettings">
-            <h3>Advanced Settings</h3>
-            <div class="input-group">
-                <label for="wsServer">WebSocket Server:</label>
-                <input type="text" id="wsServer" value="ws://localhost:8080" placeholder="WebSocket Server URL">
+
+        <div class="api-options">
+            <div id="googleOption" class="api-option active">
+                <div class="api-key-group">
+                    <label for="googleKey">Google Cloud API Key:</label>
+                    <input type="text" id="googleKey" placeholder="Enter your Google Cloud API key">
+                    <div id="googleKeyError" class="error-message">API key is required</div>
+                </div>
             </div>
-            <div class="input-group">
-                <label for="oscAddress">OSC Address:</label>
-                <input type="text" id="oscAddress" value="127.0.0.1" placeholder="OSC IP Address">
+            
+            <div id="whisperOption" class="api-option">
+                <div class="api-key-group">
+                    <label for="whisperKey">Whisper API Key:</label>
+                    <input type="text" id="whisperKey" placeholder="Enter your Whisper API key">
+                    <div id="whisperKeyError" class="error-message">API key is required</div>
+                </div>
             </div>
-            <div class="input-group">
-                <label for="oscPort">OSC Port:</label>
-                <input type="text" id="oscPort" value="57120" placeholder="OSC Port">
-            </div>
+        </div>
+
+        <div>
+            <button id="startBtn" onclick="startRecording()">Start Recording</button>
+            <button id="stopBtn" onclick="stopRecording()" disabled>Stop Recording</button>
+        </div>
+
+        <div id="transcription"></div>
+
+        <div class="settings">
+            <h2>OSC Settings</h2>
+            <label for="oscAddress">OSC Address:</label>
+            <input type="text" id="oscAddress" value="127.0.0.1">
+            
+            <label for="oscPort">OSC Port:</label>
+            <input type="number" id="oscPort" value="57120">
         </div>
     </div>
+
+    <!-- Include p5.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    
+    <!-- Include socket.io for communication with the bridge -->
+    <script src="http://localhost:8081/socket.io/socket.io.js"></script>
+    
+    <!-- Include our sketch -->
     <script src="sketch.js"></script>
 </body>
 </html> 

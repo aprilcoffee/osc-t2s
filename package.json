@@ -1,39 +1,17 @@
 {
   "name": "osc-t2s",
   "version": "1.0.0",
-  "description": "Local OSC Text to Speech application",
-  "main": "server.js",
-  "bin": "server.js",
-  "pkg": {
-    "assets": [
-      "index.html",
-      "sketch.js"
-    ],
-    "targets": [
-      "node18-macos-x64",
-      "node18-macos-arm64",
-      "node18-win-x64"
-    ],
-    "outputPath": "dist"
-  },
+  "description": "Speech to OSC converter",
+  "main": "bridge.js",
   "scripts": {
-    "start": "node server.js",
-    "serve": "http-server -a localhost -p 8000 -c-1",
-    "dev": "concurrently \"npm run start\" \"npm run serve\"",
-    "build": "pkg .",
-    "build:mac-intel": "pkg . --target node18-macos-x64 --output dist/osc-t2s-mac-intel",
-    "build:mac-arm": "pkg . --target node18-macos-arm64 --output dist/osc-t2s-mac-arm",
-    "build:windows": "pkg . --target node18-win-x64 --output dist/osc-t2s-windows.exe",
-    "build:all": "npm run build:mac-intel && npm run build:mac-arm && npm run build:windows",
-    "package": "node build.js"
+    "start": "node bridge.js"
   },
   "dependencies": {
-    "ws": "^8.16.0",
+    "express": "^4.18.2",
     "node-osc": "^8.0.12",
-    "http-server": "^14.1.1",
-    "concurrently": "^8.2.2"
-  },
-  "devDependencies": {
-    "pkg": "^5.8.1"
+    "socket.io": "^4.7.2",
+    "axios": "^1.6.2",
+    "form-data": "^4.0.0",
+    "googleapis": "^129.0.0"
   }
-} 
+}

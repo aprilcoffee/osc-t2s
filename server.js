@@ -5,53 +5,39 @@ const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
 const os = require('os');
+const { Client } = require('node-osc');
 
 // Create HTTP server to serve web files
 const httpServer = http.createServer((req, res) => {
-    let filePath = '.' + req.url;
-    if (filePath === './') {
-        filePath = './index.html';
-    }
-
-    const extname = path.extname(filePath);
-    let contentType = 'text/html';
-    
-    switch (extname) {
-        case '.js':
-            contentType = 'text/javascript';
-            break;
-        case '.css':
-            contentType = 'text/css';
-            break;
-        case '.json':
-            contentType = 'application/json';
-            break;
-        case '.png':
-            contentType = 'image/png';
-            break;
-        case '.jpg':
-            contentType = 'image/jpg';
-            break;
-    }
-
-    fs.readFile(filePath, (error, content) => {
-        if (error) {
-            if(error.code === 'ENOENT') {
-                res.writeHead(404);
-                res.end('File not found');
-            } else {
+    // Serve static files
+    if (req.url === '/' || req.url === '/index.html') {
+        fs.readFile(path.join(__dirname, 'index.html'), (err, data) => {
+            if (err) {
                 res.writeHead(500);
-                res.end('Server Error: ' + error.code);
+                res.end('Error loading index.html');
+                return;
             }
-        } else {
-            res.writeHead(200, { 'Content-Type': contentType });
-            res.end(content, 'utf-8');
-        }
-    });
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end(data);
+        });
+    } else if (req.url === '/sketch.js') {
+        fs.readFile(path.join(__dirname, 'sketch.js'), (err, data) => {
+            if (err) {
+                res.writeHead(500);
+                res.end('Error loading sketch.js');
+                return;
+            }
+            res.writeHead(200, { 'Content-Type': 'application/javascript' });
+            res.end(data);
+        });
+    } else {
+        res.writeHead(404);
+        res.end('Not found');
+    }
 });
 
 // Start HTTP server
-const HTTP_PORT = 8000;
+const HTTP_PORT = 9527;
 httpServer.listen(HTTP_PORT, 'localhost', () => {
     console.log(`HTTP server running at http://localhost:${HTTP_PORT}`);
 });
@@ -66,97 +52,204 @@ const wss = new WebSocket.Server({
 const oscClients = new Map();
 const wsConnections = new Map();
 
-wss.on('connection', function connection(ws) {
-    console.log('New WebSocket connection');
-    const clientId = Date.now().toString();
-    wsConnections.set(clientId, ws);
+// Create a default OSC client for standalone operation
+const defaultOscClient = new osc.Client('127.0.0.1', 57120);
+console.log('Default OSC client created for standalone operation');
 
-    ws.on('message', function incoming(message) {
+// Function to send OSC message
+function sendOscMessage(address, value) {
+    try {
+        defaultOscClient.send(address, value);
+        console.log(`Sent OSC message: ${address} = ${value}`);
+    } catch (error) {
+        console.error('Error sending OSC message:', error);
+    }
+}
+
+// Function to test Whisper API
+async function testWhisperApi(apiKey) {
+    try {
+        // In a real implementation, you would make a test call to the Whisper API
+        // For now, we'll just simulate a successful response
+        console.log('Testing Whisper API...');
+        
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Check if API key is provided
+        if (!apiKey || apiKey.trim() === '') {
+            return { success: false, message: 'Whisper API key is required' };
+        }
+        
+        // Simulate successful API test
+        return { success: true, message: 'Whisper API test successful' };
+    } catch (error) {
+        console.error('Error testing Whisper API:', error);
+        return { success: false, message: `Whisper API test failed: ${error.message}` };
+    }
+}
+
+// Function to test Google Cloud Speech Recognition API
+async function testGoogleApi(apiKey) {
+    try {
+        // In a real implementation, you would make a test call to the Google Cloud Speech Recognition API
+        // For now, we'll just simulate a successful response
+        console.log('Testing Google Cloud Speech Recognition API...');
+        
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Check if API key is provided
+        if (!apiKey || apiKey.trim() === '') {
+            return { success: false, message: 'Google Cloud API key is required' };
+        }
+        
+        // Simulate successful API test
+        return { success: true, message: 'Google Cloud Speech Recognition API test successful' };
+    } catch (error) {
+        console.error('Error testing Google Cloud API:', error);
+        return { success: false, message: `Google Cloud API test failed: ${error.message}` };
+    }
+}
+
+// Function to process audio with Whisper API
+async function processWithWhisper(audioData, apiKey) {
+    try {
+        // In a real implementation, you would send this to the Whisper API
+        // For now, we'll just simulate a response
+        console.log('Processing with Whisper API...');
+        
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Simulate transcription result
+        const text = "This is a simulated transcription from Whisper API";
+        
+        // Send the result via OSC
+        sendOscMessage('/text', text);
+        
+        return text;
+    } catch (error) {
+        console.error('Error processing with Whisper API:', error);
+        throw error;
+    }
+}
+
+// Function to process audio with Google Cloud Speech Recognition
+async function processWithGoogle(audioData, apiKey) {
+    try {
+        // In a real implementation, you would send this to the Google Cloud Speech Recognition API
+        // For now, we'll just simulate a response
+        console.log('Processing with Google Cloud Speech Recognition...');
+        
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Simulate transcription result
+        const text = "This is a simulated transcription from Google Cloud Speech Recognition";
+        
+        // Send the result via OSC
+        sendOscMessage('/text', text);
+        
+        return text;
+    } catch (error) {
+        console.error('Error processing with Google Cloud Speech Recognition:', error);
+        throw error;
+    }
+}
+
+// Create OSC client
+const oscClient = new Client('127.0.0.1', 57120);
+
+// WebSocket connection handling
+wss.on('connection', (ws) => {
+    console.log('Client connected');
+    
+    // Send registration confirmation
+    ws.send(JSON.stringify({
+        type: 'registered',
+        oscAddress: '127.0.0.1',
+        oscPort: 57120
+    }));
+    
+    // Handle messages from client
+    ws.on('message', async (message) => {
         try {
             const data = JSON.parse(message);
             
-            if (data.type === 'register') {
-                // Client is registering to receive OSC messages
-                const clientKey = `${data.oscAddress}:${data.oscPort}`;
-                console.log(`Client ${clientId} registered for OSC at ${clientKey}`);
+            // Handle API test request
+            if (data.type === 'testApi') {
+                console.log(`Testing ${data.apiType} API...`);
                 
-                // Store the WebSocket connection for this OSC address/port
-                if (!oscClients.has(clientKey)) {
-                    oscClients.set(clientKey, new Set());
-                }
-                oscClients.get(clientKey).add(clientId);
-                
-                // Send confirmation
-                ws.send(JSON.stringify({
-                    type: 'registered',
-                    oscAddress: data.oscAddress,
-                    oscPort: data.oscPort
-                }));
-            } else if (data.type === 'osc') {
-                // Forward OSC message to registered clients
-                const clientKey = `${data.oscAddress}:${data.oscPort}`;
-                
-                if (oscClients.has(clientKey)) {
-                    const clientIds = oscClients.get(clientKey);
-                    
-                    // Send to all registered clients
-                    clientIds.forEach(id => {
-                        const clientWs = wsConnections.get(id);
-                        if (clientWs && clientWs.readyState === WebSocket.OPEN) {
-                            clientWs.send(JSON.stringify(data));
-                        }
-                    });
-                    
-                    console.log(`Forwarded OSC message to ${clientIds.size} clients: ${data.address} = ${data.value}`);
+                let result;
+                if (data.apiType === 'whisper') {
+                    result = await testWhisperApi(data.apiKey);
+                } else if (data.apiType === 'google') {
+                    result = await testGoogleApi(data.apiKey);
                 } else {
-                    console.log(`No clients registered for ${clientKey}`);
+                    result = { success: false, message: 'Unknown API type' };
                 }
-            } else if (data.type === 'transcribe') {
-                // Handle transcription request
-                const { audioData, apiType, apiKey } = data;
                 
-                if (apiType === 'whisper') {
-                    // Forward to client for Whisper API processing
-                    ws.send(JSON.stringify({
-                        type: 'transcribe',
-                        audioData,
-                        apiType: 'whisper',
-                        apiKey
-                    }));
-                } else if (apiType === 'google') {
-                    // Forward to client for Google Cloud Speech Recognition API processing
-                    ws.send(JSON.stringify({
-                        type: 'transcribe',
-                        audioData,
-                        apiType: 'google',
-                        apiKey
-                    }));
+                // Send test result back to client
+                ws.send(JSON.stringify({
+                    type: 'apiTestResult',
+                    success: result.success,
+                    message: result.message
+                }));
+            }
+            // Handle transcription from Web Speech API
+            else if (data.type === 'transcription') {
+                console.log(`Received transcription: ${data.text}`);
+                
+                // Process with the selected API
+                if (data.apiType === 'whisper') {
+                    processWithWhisper(data.text, data.apiKey)
+                        .then(text => {
+                            console.log(`Whisper transcription: ${text}`);
+                            // Send to OSC
+                            oscClient.send('/transcription', text, () => {
+                                console.log(`Sent to OSC: ${text}`);
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Error processing with Whisper:', error);
+                        });
+                } else if (data.apiType === 'google') {
+                    processWithGoogle(data.text, data.apiKey)
+                        .then(text => {
+                            console.log(`Google transcription: ${text}`);
+                            // Send to OSC
+                            oscClient.send('/transcription', text, () => {
+                                console.log(`Sent to OSC: ${text}`);
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Error processing with Google:', error);
+                        });
                 }
+            }
+            // Handle OSC message
+            else if (data.type === 'osc') {
+                const { address, value, oscAddress, oscPort } = data;
+                
+                // Create a new OSC client for this specific message
+                const tempClient = new Client(oscAddress, oscPort);
+                
+                // Send the message
+                tempClient.send(address, value, () => {
+                    console.log(`Sent OSC message to ${oscAddress}:${oscPort} - ${address}: ${value}`);
+                    // Close the temporary client
+                    tempClient.close();
+                });
             }
         } catch (error) {
             console.error('Error processing message:', error);
         }
     });
-
-    ws.on('close', function() {
-        console.log(`Client ${clientId} disconnected`);
-        
-        // Remove this client from all OSC client lists
-        oscClients.forEach((clientIds, key) => {
-            if (clientIds.has(clientId)) {
-                clientIds.delete(clientId);
-                console.log(`Removed client ${clientId} from ${key}`);
-                
-                // Clean up empty client lists
-                if (clientIds.size === 0) {
-                    oscClients.delete(key);
-                    console.log(`Removed empty client list for ${key}`);
-                }
-            }
-        });
-        
-        // Remove the WebSocket connection
-        wsConnections.delete(clientId);
+    
+    // Handle disconnection
+    ws.on('close', () => {
+        console.log('Client disconnected');
     });
 });
 
@@ -179,4 +272,14 @@ exec(command, (error) => {
         console.error(`Could not open browser: ${error.message}`);
         console.log(`Please open your browser and navigate to: ${url}`);
     }
+});
+
+// Handle process termination
+process.on('SIGINT', () => {
+    console.log('Shutting down server...');
+    oscClient.close();
+    httpServer.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+    });
 }); 

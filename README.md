@@ -1,153 +1,141 @@
-# OSC Text to Speech
+# Speech to OSC
 
-A simple local application that records audio, transcribes it using the Whisper API, and sends the results via OSC messages.
+A web application that converts speech to OSC messages, allowing you to control OSC-compatible applications with your voice.
 
 ## Features
 
-- Audio recording with start/stop controls
-- Whisper API integration for speech-to-text
-- OSC communication for:
-  - Start recording signal
-  - Stop recording signal
-  - Transcribed text output
+- Speech recognition using the Web Speech API
+- Support for both Google Cloud Speech Recognition and Whisper API
+- OSC message sending for transcriptions
+- OSC message receiving for remote control (start/stop recording)
 - Simple and intuitive user interface
-- Local WebSocket server for OSC communication
+- Works in modern browsers (Chrome recommended)
 
-## Quick Start
+## Installation
 
-### Method 1: Using Node.js (Recommended)
+### Prerequisites
 
-1. **Install Node.js** if you haven't already (from [nodejs.org](https://nodejs.org/))
+- Node.js (v14 or higher)
+- npm (comes with Node.js)
+- A modern web browser (Chrome recommended)
 
-2. **Clone or download this repository**
+### Setup
 
-3. **Install dependencies**:
+1. Clone or download this repository:
+   ```bash
+   git clone https://github.com/yourusername/osc-t2s.git
+   cd osc-t2s
+   ```
+
+2. Install dependencies:
    ```bash
    npm install
    ```
 
-4. **Start the application**:
-   ```bash
-   npm run dev
-   ```
+## Running the Application
 
-5. **Open your browser** and go to:
+### Method 1: Using Node.js (Recommended)
+
+1. Start the server:
+   ```bash
+   npm start
    ```
-   http://localhost:8000
+   This runs the Node.js server that serves the web application and handles WebSocket connections.
+
+2. Open your browser and navigate to:
+   ```
+   http://localhost:9527
    ```
 
 ### Method 2: Using Python's Built-in HTTP Server
 
-1. **Install Python** if you haven't already (from [python.org](https://python.org))
+If you don't want to install Node.js, you can use Python's built-in HTTP server, but you'll still need to run the Node.js server for WebSocket and OSC functionality:
 
-2. **Clone or download this repository**
-
-3. **Start the WebSocket server** (requires Node.js):
+1. Start the Node.js server in one terminal:
    ```bash
-   npm install
    npm start
    ```
 
-4. **In a separate terminal, start the web server** using Python:
+2. Start the Python HTTP server in another terminal:
    ```bash
    # Python 3
-   python -m http.server 8000
+   python -m http.server 9527
    
    # Python 2
-   python -m SimpleHTTPServer 8000
+   python -m SimpleHTTPServer 9527
    ```
 
-5. **Open your browser** and go to:
+3. Open your browser and navigate to:
    ```
-   http://localhost:8000
+   http://localhost:9527
    ```
-
-### Method 3: Using Any Web Server
-
-1. **Start the WebSocket server** (requires Node.js):
-   ```bash
-   npm install
-   npm start
-   ```
-
-2. **Copy the web files** to any web server:
-   - index.html
-   - sketch.js
-   - Any other web assets
-
-3. **Access the application** through your web server
-
-### Method 4: Using Pre-built Executables
-
-Pre-built executables are available for the following platforms:
-
-#### For Mac (Intel & Apple Silicon):
-1. Download the appropriate version from the releases page:
-   - `osc-t2s-mac-intel.zip` for Intel Macs
-   - `osc-t2s-mac-arm.zip` for Apple Silicon (M1/M2) Macs
-2. Extract the ZIP file
-3. Open the application by double-clicking the `osc-t2s` file
-4. If you see a security warning, go to System Preferences > Security & Privacy and click "Open Anyway"
-5. The application will start automatically and open in your default browser
-
-#### For Windows:
-1. Download `osc-t2s-windows.zip` from the releases page
-2. Extract the ZIP file
-3. Double-click the `osc-t2s.exe` file
-4. The application will start automatically and open in your default browser
-
-These executables include both the WebSocket server and web interface, eliminating the need for Node.js installation.
 
 ## Usage
 
-1. Enter your Whisper API key in the provided input field
-2. Click "Start Recording" to begin capturing audio
-3. Click "Stop Recording" to end the recording and process the audio
-4. The transcribed text will appear in the output area and be sent via OSC
+1. Open the application in your browser
+2. Enter your API key (Google Cloud or Whisper)
+3. Configure OSC settings (address and port)
+4. Click "Start Recording" and speak
+5. Your speech will be converted to text and sent as OSC messages
 
-## Advanced Settings
+## OSC Settings
 
-Click "Show Advanced Settings" to configure:
-- WebSocket server URL (default: ws://localhost:8080)
-- OSC address (default: 127.0.0.1)
-- OSC port (default: 57120)
+- **OSC Address**: The IP address of the OSC server to send transcriptions to (default: 127.0.0.1)
+- **OSC Port**: The port number of the OSC server to send transcriptions to (default: 57120)
+- **OSC Receive Port**: The port number for receiving OSC commands (default: 12000)
 
 ## OSC Messages
 
-The application sends the following OSC messages:
+### Sending (Transcriptions)
+- `/transcription` - Contains the transcribed text from speech recognition
 
-- `/startRecording` - Sent when recording starts
-- `/stopRecording` - Sent when recording stops
-- `/text` - Contains the transcribed text from Whisper API
+### Receiving (Commands)
+- `/startRecording` - Starts the recording process
+- `/stopRecording` - Stops the recording process
 
-## Requirements
+## API Options
 
-- Node.js
-- Modern web browser with JavaScript enabled
-- Whisper API key
-- OSC receiver application (for receiving the messages)
+### Google Cloud Speech Recognition
+
+- Free tier available with limited usage
+- Good for general speech recognition
+- Requires a Google Cloud API key
+
+### Whisper API
+
+- More accurate transcription
+- Supports multiple languages
+- Requires an OpenAI API key
 
 ## Troubleshooting
 
-### npm Installation Issues
+### Speech Recognition Issues
 
-If `npm install` gets stuck or fails:
+- Make sure you're using a modern browser (Chrome recommended)
+- Check that your microphone is properly connected and working
+- Ensure you have granted microphone access to the website
 
-1. Cancel the process (Ctrl+C) and try:
-   ```bash
-   npm cache clean --force
-   npm install --no-package-lock
-   ```
+### OSC Connection Issues
 
-2. If that doesn't work, try using yarn:
-   ```bash
-   npm install -g yarn
-   yarn
-   ```
+- Verify that the OSC server is running and accessible
+- Check that the OSC address and port are correct
+- Make sure your firewall isn't blocking the connection
+- For receiving OSC commands, ensure port 12000 is open and accessible
 
-### WebSocket Connection Issues
+### Server Issues
 
-If you see "Upgrade Required" when accessing the WebSocket server directly in a browser:
-- Don't access the WebSocket server (port 8080) directly in a browser
-- Access the web interface at http://localhost:8000 instead
-- The web interface will automatically connect to the WebSocket server 
+- If you see "Connection refused" errors, make sure the Node.js server is running
+- If you see WebSocket errors, check that the server.js file is running correctly
+- If you're using the Python HTTP server method, ensure both servers are running
+
+## Credits
+
+This project uses the following libraries:
+
+- [p5.js](https://p5js.org/) - A JavaScript library for creative coding
+- [p5js-osc](https://github.com/genekogan/p5js-osc) by [Gene Kogan](https://github.com/genekogan) - OSC library for p5.js
+- [osc.js](https://github.com/colinbdclark/osc.js) - A JavaScript implementation of the Open Sound Control protocol
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details. 
