@@ -18,6 +18,17 @@ A tool that converts speech to OSC messages, allowing you to control any OSC-com
 
 ## Installation
 
+### Option 1: Download Pre-built Executable
+
+1. Go to the [Releases](https://github.com/yourusername/osc-t2s/releases) page
+2. Download the appropriate executable for your platform:
+   - Windows: `osc-t2s-win.exe`
+   - macOS: `osc-t2s-mac`
+   - Linux: `osc-t2s-linux`
+3. Run the executable - it will automatically open your browser to the web interface
+
+### Option 2: Build from Source
+
 1. Clone this repository:
 ```bash
 git clone https://github.com/yourusername/osc-t2s.git
@@ -29,50 +40,28 @@ cd osc-t2s
 npm install
 ```
 
-## Building Executables
-
-You can build executables for your platform using the provided build script:
-
+3. Build the executable:
 ```bash
-./build.sh
+# For current platform
+npm run build
+
+# For specific platform
+npm run build:mac    # macOS
+npm run build:win    # Windows
+npm run build:linux  # Linux
+
+# For all platforms
+npm run build:all
 ```
 
-This will create executables in the `dist` directory. The script will:
-1. Check for required dependencies
-2. Install necessary packages
-3. Build executables for your current platform
-4. Optionally build for all platforms (Windows, macOS, Linux)
+The executables will be created in the `dist` directory.
 
 ## Usage
 
-### Running from Source
-
-1. Start the server:
-```bash
-npm start
-```
-
-2. Open your web browser and navigate to:
-```
-http://localhost:8081
-```
-
-3. Enter your OpenAI API key in the web interface
-
+1. Run the executable for your platform
+2. The web interface will automatically open in your browser
+3. Enter your OpenAI API key
 4. Click "Start Recording" to begin speech recognition
-
-### Running from Executable
-
-1. Navigate to the `dist` directory
-2. Run the appropriate executable for your platform:
-   - Windows: `osc-t2s-win.exe`
-   - macOS: `osc-t2s-mac`
-   - Linux: `osc-t2s-linux`
-
-3. Open your web browser and navigate to:
-```
-http://localhost:8081
-```
 
 ## OSC Message Format
 
