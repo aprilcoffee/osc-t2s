@@ -77,9 +77,26 @@ A simple local application that records audio, transcribes it using the Whisper 
 
 3. **Access the application** through your web server
 
-### Method 4: Using a Pre-built Executable (Coming Soon)
+### Method 4: Using Pre-built Executables
 
-A standalone executable version is planned for future releases, which will eliminate the need for Node.js installation.
+Pre-built executables are available for the following platforms:
+
+#### For Mac (Intel & Apple Silicon):
+1. Download the appropriate version from the releases page:
+   - `osc-t2s-mac-intel.zip` for Intel Macs
+   - `osc-t2s-mac-arm.zip` for Apple Silicon (M1/M2) Macs
+2. Extract the ZIP file
+3. Open the application by double-clicking the `osc-t2s` file
+4. If you see a security warning, go to System Preferences > Security & Privacy and click "Open Anyway"
+5. The application will start automatically and open in your default browser
+
+#### For Windows:
+1. Download `osc-t2s-windows.zip` from the releases page
+2. Extract the ZIP file
+3. Double-click the `osc-t2s.exe` file
+4. The application will start automatically and open in your default browser
+
+These executables include both the WebSocket server and web interface, eliminating the need for Node.js installation.
 
 ## Usage
 
