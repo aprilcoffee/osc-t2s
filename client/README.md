@@ -1,64 +1,90 @@
-# OSC Text to Speech Client Examples
+# OSC Client Examples
 
-This folder contains example clients that can be used to test the OSC Text to Speech server.
+This directory contains example clients for interacting with the Speech to OSC bridge in different programming languages and environments.
 
-## Python OSC Receiver
+## Python Client
 
-A simple Python script that listens for OSC messages and prints them to the console.
+Located in `python/osc_client.py`
+
+A command-line Python client that allows you to control speech recording via OSC messages.
 
 ### Requirements
-
-- Python 3.x
-- python-osc library
-
-### Installation
-
-```bash
-pip install python-osc
-```
+- Python 3.6 or higher
+- No additional dependencies required
 
 ### Usage
-
 ```bash
-python osc_receiver.py --ip 127.0.0.1 --port 57120
+# Basic usage with default settings
+python osc_client.py
+
+# Specify custom host and port
+python osc_client.py --host 192.168.1.100 --port 12000
 ```
 
-This will start an OSC receiver that listens on the specified IP address and port. The default is 127.0.0.1:57120.
+## JavaScript Client
 
-## Web OSC Receiver
+Located in `javascript/osc_client.js`
 
-A simple HTML page with JavaScript that can receive OSC messages via WebSocket.
+A Node.js client that uses WebSocket to communicate with the OSC bridge.
+
+### Requirements
+- Node.js 12 or higher
+- WebSocket package (`npm install ws`)
 
 ### Usage
+```bash
+# Install dependencies
+npm install
 
-1. Open the `osc_receiver.html` file in a web browser
-2. Enter the WebSocket server URL (default: ws://localhost:8080)
-3. Enter the OSC address and port you want to receive messages on
-4. Click "Connect" to connect to the WebSocket server
-5. Messages will appear in the messages area
+# Run the example
+node osc_client.js
+```
 
-## Testing the System
+## Max/MSP Patch
 
-To test the entire system:
+Located in `max/osc_client.maxpat`
 
-1. Start the WebSocket server:
-   ```bash
-   node ../server.js
-   ```
+A Max/MSP patch that demonstrates how to send and receive OSC messages.
 
-2. Start the Python OSC receiver:
-   ```bash
-   python osc_receiver.py
-   ```
+### Features
+- UDP receive on port 12000
+- UDP send to localhost:12000
+- Buttons for starting and stopping recording
+- Message routing and printing
 
-3. Open the web interface (index.html) in a browser and start recording
+### Usage
+1. Open the patch in Max/MSP
+2. Click the buttons to start/stop recording
+3. Watch the console for incoming messages
 
-4. Open the web OSC receiver (osc_receiver.html) in another browser window
+## OSC Message Format
 
-5. You should see the OSC messages appear in both the Python console and the web receiver
+All clients use the following OSC message format:
+
+### Start Recording
+```
+/startRecording
+```
+
+### Stop Recording
+```
+/stopRecording
+```
+
+### Speech Results
+```
+/speech "transcribed text"
+```
+
+## Connection Information
+
+- OSC Server Port: 12000
+- WebSocket Server: ws://localhost:8081
+- Default Host: 127.0.0.1
 
 ## Notes
 
-- The Python receiver is useful for debugging and testing with other OSC applications
-- The web receiver is useful for testing the WebSocket server directly
-- Both clients can be used simultaneously to verify that messages are being properly forwarded 
+- The Python and JavaScript clients include error handling and connection management
+- The Max/MSP patch provides a visual interface for testing
+- All clients are compatible with the main Speech to OSC bridge
+- Make sure the bridge is running before testing the clients 

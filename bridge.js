@@ -1,141 +1,126 @@
 const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
-const { Client, Server } = require('node-osc');
 const axios = require('axios');
 const FormData = require('form-data');
 const fs = require('fs');
 const path = require('path');
-const { google } = require('googleapis');
+const os = require('os');
 
+// Configuration
+const config = {
+	port: process.env.PORT || 8081,
+	oscPort: process.env.OSC_PORT || 12000,
+	oscClientPort: process.env.OSC_CLIENT_PORT || 57120
+};
+
+// Get the application directory
+const getAppDir = () => {
+	// When running as an executable, __dirname is the directory containing the executable
+	// When running as a Node.js script, __dirname is the directory containing the script
+	return process.pkg ? path.dirname(process.execPath) : __dirname;
+};
+
+// Initialize Express app
 const app = express();
 const server = http.createServer(app);
-const io = socketIO(server);
-
-// Serve static files from current directory
-app.use(express.static(__dirname));
-
-// Create OSC client and server
-const client = new Client('127.0.0.1', 57120);
-const oscServer = new Server(12000, '0.0.0.0', () => {
-	console.log('OSC Server is listening on port 12000');
+const io = socketIO(server, {
+	cors: {
+		origin: "*",
+		methods: ["GET", "POST"]
+	}
 });
 
-// Store API keys
-let whisperKey = '';
-let googleToken = null;
+// Serve static files from the application directory
+app.use(express.static(getAppDir()));
 
-// Configure Google OAuth
-const oauth2Client = new google.auth.OAuth2(
-	process.env.GOOGLE_CLIENT_ID || 'YOUR_CLIENT_ID',  // Replace with your actual client ID
-	process.env.GOOGLE_CLIENT_SECRET || 'YOUR_CLIENT_SECRET',  // Replace with your actual client secret
-	'http://localhost:8081/oauth2callback'
-);
+// Handle audio transcription with Whisper API
+async function transcribeAudio(audioData, whisperKey) {
+	try {
+		// Create form data for Whisper API
+		const formData = new FormData();
+		formData.append('file', Buffer.from(audioData, 'base64'), {
+			filename: 'audio.wav',
+			contentType: 'audio/wav'
+		});
+		formData.append('model', 'whisper-1');
+		
+		// Send to Whisper API
+		const response = await axios.post('https://api.openai.com/v1/audio/transcriptions', formData, {
+			headers: {
+				...formData.getHeaders(),
+				'Authorization': `Bearer ${whisperKey}`
+			}
+		});
+		
+		return response.data.text;
+	} catch (error) {
+		console.error('Error transcribing audio:', error);
+		throw new Error(error.response?.data?.error?.message || 'Error processing audio');
+	}
+}
 
-// Handle incoming OSC messages
-oscServer.on('message', function (msg) {
-	console.log('Received OSC message:', msg);
-	io.emit('oscMessage', msg);
-});
+// Get local IP address
+function getLocalIpAddress() {
+	const interfaces = os.networkInterfaces();
+	for (const name of Object.keys(interfaces)) {
+		for (const iface of interfaces[name]) {
+			// Skip internal and non-IPv4 addresses
+			if (!iface.internal && iface.family === 'IPv4') {
+				return iface.address;
+			}
+		}
+	}
+	return '127.0.0.1';
+}
 
-// Handle socket.io connections
+// Socket.io connection handling
 io.on('connection', (socket) => {
 	console.log('Client connected');
 	
-	// Handle Google OAuth request
-	socket.on('requestGoogleAuth', () => {
-		console.log('Requesting Google Auth...');
-		const authUrl = oauth2Client.generateAuthUrl({
-			access_type: 'offline',
-			scope: ['https://www.googleapis.com/auth/cloud-platform'],
-			prompt: 'consent'  // Force consent screen to always appear
-		});
-		console.log('Generated Auth URL:', authUrl);
-		socket.emit('googleAuthUrl', authUrl);
+	// Send initial configuration
+	socket.emit('config', {
+		oscPort: config.oscPort,
+		oscClientPort: config.oscClientPort,
+		localIp: getLocalIpAddress()
 	});
 	
-	// Handle OAuth callback
-	app.get('/oauth2callback', async (req, res) => {
-		const { code } = req.query;
+	// Handle audio data for transcription
+	socket.on('audioData', async (data) => {
 		try {
-			const { tokens } = await oauth2Client.getToken(code);
-			oauth2Client.setCredentials(tokens);
-			googleToken = tokens.access_token;
-			io.emit('googleAuthSuccess', googleToken);
-			res.send('Authentication successful! You can close this window.');
-		} catch (error) {
-			console.error('Error getting tokens:', error);
-			io.emit('googleAuthError', error.message);
-			res.send('Authentication failed. Please try again.');
-		}
-	});
-	
-	// Handle API key updates
-	socket.on('updateAPIKeys', (keys) => {
-		whisperKey = keys.whisperKey;
-		googleToken = keys.googleToken;
-		console.log('API keys updated');
-	});
-	
-	// Handle audio processing
-	socket.on('processAudio', async (audioData) => {
-		try {
-			// Process with Whisper API
-			if (whisperKey) {
-				const formData = new FormData();
-				formData.append('file', Buffer.from(audioData), {
-					filename: 'audio.webm',
-					contentType: 'audio/webm'
-				});
-				formData.append('model', 'whisper-1');
-				
-				const whisperResponse = await axios.post('https://api.openai.com/v1/audio/transcriptions', formData, {
-					headers: {
-						...formData.getHeaders(),
-						'Authorization': `Bearer ${whisperKey}`
-					}
-				});
-				
-				const whisperText = whisperResponse.data.text;
-				socket.emit('transcription', { text: whisperText, source: 'whisper' });
-				client.send('/transcription', whisperText);
+			const { audio, whisperKey } = data;
+			
+			if (!whisperKey) {
+				socket.emit('error', { message: 'Whisper API key is required' });
+				return;
 			}
 			
-			// Process with Google Cloud Speech
-			if (googleToken) {
-				const speechResponse = await axios.post(
-					'https://speech.googleapis.com/v1/speech:recognize',
-					{
-						config: {
-							encoding: 'WEBM_OPUS',
-							sampleRateHertz: 48000,
-							languageCode: 'en-US'
-						},
-						audio: {
-							content: audioData.toString('base64')
-						}
-					},
-					{
-						headers: {
-							'Authorization': `Bearer ${googleToken}`,
-							'Content-Type': 'application/json'
-						}
-					}
-				);
-				
-				const googleText = speechResponse.data.results[0].alternatives[0].transcript;
-				socket.emit('transcription', { text: googleText, source: 'google' });
-				client.send('/transcription', googleText);
-			}
+			// Transcribe audio
+			const transcription = await transcribeAudio(audio, whisperKey);
+			
+			// Send transcription back to client
+			socket.emit('transcription', { text: transcription });
+			
+			// Send OSC message with transcription
+			socket.emit('osc', ['/transcription', transcription]);
+			
 		} catch (error) {
 			console.error('Error processing audio:', error);
-			socket.emit('error', error.message);
+			socket.emit('error', { message: error.message });
 		}
 	});
 	
-	// Handle browser sending OSC messages
-	socket.on('sendOSC', (msg) => {
-		client.send(msg.address, msg.args);
+	// Handle OSC messages from client
+	socket.on('send', (data) => {
+		try {
+			const { address, args } = data;
+			console.log(`Received OSC message: ${address}`, args);
+			
+			// Broadcast OSC message to all connected clients
+			io.emit('osc', [address, ...args]);
+		} catch (error) {
+			console.error('Error handling OSC message:', error);
+		}
 	});
 	
 	socket.on('disconnect', () => {
@@ -144,9 +129,12 @@ io.on('connection', (socket) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 8081;
-server.listen(PORT, () => {
-	console.log(`Server running on port ${PORT}`);
-	console.log(`OSC Client sending to 127.0.0.1:57120`);
-	console.log(`OSC Server listening on 0.0.0.0:12000`);
+server.listen(config.port, () => {
+	const localIp = getLocalIpAddress();
+	console.log(`Server running on port ${config.port}`);
+	console.log(`Local IP address: ${localIp}`);
+	console.log(`OSC server port: ${config.oscPort}`);
+	console.log(`OSC client port: ${config.oscClientPort}`);
+	console.log(`Access the application at: http://${localIp}:${config.port}`);
+	console.log(`Or locally at: http://localhost:${config.port}`);
 });

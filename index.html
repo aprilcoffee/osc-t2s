@@ -18,19 +18,21 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .status {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
+        .input-group {
+            margin-bottom: 15px;
         }
-        .status-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 10px;
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
         }
-        .ready { background-color: #4CAF50; }
-        .recording { background-color: #ff9800; }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
         button {
             padding: 10px 20px;
             border: none;
@@ -38,7 +40,10 @@
             cursor: pointer;
             font-size: 16px;
             margin-right: 10px;
-            margin-bottom: 10px;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
         }
         #startBtn {
             background-color: #4CAF50;
@@ -48,84 +53,57 @@
             background-color: #f44336;
             color: white;
         }
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        .settings {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-        }
-        .settings label {
-            display: block;
-            margin-bottom: 5px;
-        }
-        .settings input {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
+        #status {
+            margin: 15px 0;
+            padding: 10px;
             border-radius: 4px;
+            background-color: #f8f9fa;
         }
         #transcription {
             margin-top: 20px;
-            padding: 10px;
+            padding: 15px;
             border: 1px solid #ddd;
             border-radius: 4px;
             min-height: 100px;
-            background-color: #f9f9f9;
-        }
-        .api-key-group {
-            margin-bottom: 15px;
-        }
-        .error-message {
-            color: #f44336;
-            margin-top: 5px;
-            font-size: 14px;
-            display: none;
-        }
-        .api-selector {
-            margin-bottom: 20px;
-        }
-        .api-selector label {
-            margin-right: 15px;
-            cursor: pointer;
-        }
-        .api-selector input[type="radio"] {
-            margin-right: 5px;
-        }
-        .api-options {
-            margin-top: 15px;
-        }
-        .api-option {
-            display: none;
-        }
-        .api-option.active {
-            display: block;
-        }
-        .button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            margin: 5px;
-        }
-        #googleAuthBtn {
-            background-color: #4285f4;
-            color: white;
-        }
-        #googleAuthBtn.connected {
-            background-color: #34a853;
-        }
-        .info {
-            background-color: #e3f2fd;
-            color: #0d47a1;
+            white-space: pre-wrap;
         }
         .error {
             background-color: #ffebee;
             color: #c62828;
+        }
+        .info {
+            background-color: #e3f2fd;
+            color: #1565c0;
+        }
+        .info-box {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .info-box code {
+            background-color: #e9ecef;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .copy-btn {
+            background-color: #6c757d;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        .copy-btn:hover {
+            background-color: #5a6268;
         }
     </style>
 </head>
@@ -133,62 +111,73 @@
     <div class="container">
         <h1>Speech to OSC</h1>
         
-        <div class="status">
-            <div id="statusIndicator" class="status-indicator ready"></div>
-            <span id="statusText">Ready</span>
+        <div class="info-box">
+            <h3>Connection Information</h3>
+            <p>Your IP Address: <code id="ipAddress">Loading...</code></p>
+            <p>OSC Server Port: <code id="oscServerPort">12000</code></p>
+            <p>OSC Client Port: <code id="oscClientPort">57120</code></p>
+            <p>WebSocket Server: <code>ws://localhost:8081</code></p>
         </div>
-
-        <div class="api-selector">
-            <label>
-                <input type="radio" name="apiType" value="google" checked> Google Cloud Speech Recognition
-            </label>
-            <label>
-                <input type="radio" name="apiType" value="whisper"> Whisper API
-            </label>
+        
+        <div class="input-group">
+            <label for="whisperKey">Whisper API Key:</label>
+            <input type="text" id="whisperKey" placeholder="Enter your Whisper API key">
         </div>
-
-        <div class="api-options">
-            <div id="googleOption" class="api-option active">
-                <div class="api-key-group">
-                    <label for="googleKey">Google Cloud API Key:</label>
-                    <input type="text" id="googleKey" placeholder="Enter your Google Cloud API key">
-                    <div id="googleKeyError" class="error-message">API key is required</div>
-                </div>
-            </div>
-            
-            <div id="whisperOption" class="api-option">
-                <div class="api-key-group">
-                    <label for="whisperKey">Whisper API Key:</label>
-                    <input type="text" id="whisperKey" placeholder="Enter your Whisper API key">
-                    <div id="whisperKeyError" class="error-message">API key is required</div>
-                </div>
-            </div>
+        
+        <div class="button-group">
+            <button id="startBtn">Start Recording</button>
+            <button id="stopBtn">Stop Recording</button>
         </div>
-
-        <div>
-            <button id="startBtn" onclick="startRecording()">Start Recording</button>
-            <button id="stopBtn" onclick="stopRecording()" disabled>Stop Recording</button>
-        </div>
-
+        
+        <div id="status">Ready to record</div>
         <div id="transcription"></div>
+        
+        <div class="info-box">
+            <h3>Example OSC Client (Python)</h3>
+            <pre><code id="exampleCode">import socket
+import json
 
-        <div class="settings">
-            <h2>OSC Settings</h2>
-            <label for="oscAddress">OSC Address:</label>
-            <input type="text" id="oscAddress" value="127.0.0.1">
-            
-            <label for="oscPort">OSC Port:</label>
-            <input type="number" id="oscPort" value="57120">
+# OSC client setup
+client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+# Send OSC message
+def send_osc(address, *args):
+    message = json.dumps({"address": address, "args": args})
+    client.sendto(message.encode(), ("127.0.0.1", 12000))
+
+# Example: Start recording
+send_osc("/startRecording")
+
+# Example: Stop recording
+send_osc("/stopRecording")</code><button class="copy-btn" onclick="copyExample()">Copy</button></pre>
         </div>
     </div>
 
-    <!-- Include p5.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-    
-    <!-- Include socket.io for communication with the bridge -->
     <script src="http://localhost:8081/socket.io/socket.io.js"></script>
-    
-    <!-- Include our sketch -->
     <script src="sketch.js"></script>
+    <script>
+        // Get IP address
+        fetch('https://api.ipify.org?format=json')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('ipAddress').textContent = data.ip;
+            })
+            .catch(error => {
+                document.getElementById('ipAddress').textContent = 'Unable to fetch IP';
+            });
+            
+        // Copy example code
+        function copyExample() {
+            const code = document.getElementById('exampleCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                btn.textContent = 'Copied!';
+                setTimeout(() => {
+                    btn.textContent = 'Copy';
+                }, 2000);
+            });
+        }
+    </script>
 </body>
 </html> 

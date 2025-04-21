@@ -1,0 +1,110 @@
+{
+	"info" : {
+		"name" : "OSC Speech Recognition Client",
+		"author" : "OSC Bridge Example",
+		"version" : "1.0",
+		"description" : "Example TouchDesigner client for OSC speech recognition"
+	},
+	"nodes" : {
+		"osc_in1" : {
+			"type" : "OSC_In",
+			"par" : {
+				"address" : "/transcription",
+				"port" : 8081
+			}
+		},
+		"text1" : {
+			"type" : "Text",
+			"par" : {
+				"text" : "Waiting for speech...",
+				"font" : "Arial",
+				"fontsize" : 24,
+				"align" : "center",
+				"justify" : "center"
+			}
+		},
+		"container1" : {
+			"type" : "Container",
+			"par" : {
+				"backgroundcolorr" : 0.2,
+				"backgroundcolorg" : 0.2,
+				"backgroundcolorb" : 0.2,
+				"backgroundalpha" : 1
+			}
+		},
+		"button1" : {
+			"type" : "Button",
+			"par" : {
+				"text" : "Start Recording",
+				"pulse" : 1
+			}
+		},
+		"button2" : {
+			"type" : "Button",
+			"par" : {
+				"text" : "Stop Recording",
+				"pulse" : 1
+			}
+		},
+		"osc_out1" : {
+			"type" : "OSC_Out",
+			"par" : {
+				"address" : "/startRecording",
+				"port" : 8081
+			}
+		},
+		"osc_out2" : {
+			"type" : "OSC_Out",
+			"par" : {
+				"address" : "/stopRecording",
+				"port" : 8081
+			}
+		}
+	},
+	"connections" : [
+		{
+			"from" : "osc_in1",
+			"to" : "text1",
+			"frompar" : "text",
+			"topar" : "text"
+		},
+		{
+			"from" : "button1",
+			"to" : "osc_out1",
+			"frompar" : "pulse",
+			"topar" : "trigger"
+		},
+		{
+			"from" : "button2",
+			"to" : "osc_out2",
+			"frompar" : "pulse",
+			"topar" : "trigger"
+		}
+	],
+	"layout" : {
+		"container1" : {
+			"x" : 0,
+			"y" : 0,
+			"w" : 800,
+			"h" : 600
+		},
+		"text1" : {
+			"x" : 50,
+			"y" : 50,
+			"w" : 700,
+			"h" : 400
+		},
+		"button1" : {
+			"x" : 200,
+			"y" : 500,
+			"w" : 150,
+			"h" : 50
+		},
+		"button2" : {
+			"x" : 450,
+			"y" : 500,
+			"w" : 150,
+			"h" : 50
+		}
+	}
+} 

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSC Client Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #connectBtn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #startBtn {
+            background-color: #2196F3;
+            color: white;
+        }
+        #stopBtn {
+            background-color: #f44336;
+            color: white;
+        }
+        #status {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+        #messages {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        .success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>OSC Client Example</h1>
+        
+        <div class="input-group">
+            <label for="serverUrl">WebSocket Server URL:</label>
+            <input type="text" id="serverUrl" value="ws://localhost:8081" placeholder="Enter WebSocket server URL">
+        </div>
+        
+        <div class="button-group">
+            <button id="connectBtn">Connect</button>
+            <button id="startBtn" disabled>Start Recording</button>
+            <button id="stopBtn" disabled>Stop Recording</button>
+        </div>
+        
+        <div id="status">Disconnected</div>
+        <div id="messages"></div>
+    </div>
+
+    <script>
+        class OSCClient {
+            constructor() {
+                this.ws = null;
+                this.connected = false;
+                this.serverUrl = document.getElementById('serverUrl').value;
+                this.connectBtn = document.getElementById('connectBtn');
+                this.startBtn = document.getElementById('startBtn');
+                this.stopBtn = document.getElementById('stopBtn');
+                this.status = document.getElementById('status');
+                this.messages = document.getElementById('messages');
+                
+                this.setupEventListeners();
+            }
+            
+            setupEventListeners() {
+                this.connectBtn.addEventListener('click', () => this.connect());
+                this.startBtn.addEventListener('click', () => this.startRecording());
+                this.stopBtn.addEventListener('click', () => this.stopRecording());
+            }
+            
+            connect() {
+                if (this.connected) {
+                    this.disconnect();
+                    return;
+                }
+                
+                this.serverUrl = document.getElementById('serverUrl').value;
+                this.ws = new WebSocket(this.serverUrl);
+                
+                this.ws.onopen = () => {
+                    this.connected = true;
+                    this.updateUI();
+                    this.log('Connected to server');
+                };
+                
+                this.ws.onmessage = (event) => {
+                    try {
+                        const message = JSON.parse(event.data);
+                        this.log('Received: ' + JSON.stringify(message, null, 2));
+                    } catch (error) {
+                        this.log('Error parsing message: ' + error.message);
+                    }
+                };
+                
+                this.ws.onerror = (error) => {
+                    this.log('WebSocket error: ' + error.message);
+                };
+                
+                this.ws.onclose = () => {
+                    this.connected = false;
+                    this.updateUI();
+                    this.log('Disconnected from server');
+                };
+            }
+            
+            disconnect() {
+                if (this.ws) {
+                    this.ws.close();
+                }
+            }
+            
+            sendOSC(address, ...args) {
+                if (!this.connected) {
+                    this.log('Not connected to server');
+                    return;
+                }
+                
+                const message = {
+                    address: address,
+                    args: args
+                };
+                
+                this.ws.send(JSON.stringify(message));
+                this.log('Sent: ' + JSON.stringify(message, null, 2));
+            }
+            
+            startRecording() {
+                this.sendOSC('/startRecording');
+            }
+            
+            stopRecording() {
+                this.sendOSC('/stopRecording');
+            }
+            
+            updateUI() {
+                this.connectBtn.textContent = this.connected ? 'Disconnect' : 'Connect';
+                this.startBtn.disabled = !this.connected;
+                this.stopBtn.disabled = !this.connected;
+                this.status.textContent = this.connected ? 'Connected' : 'Disconnected';
+                this.status.className = this.connected ? 'success' : '';
+            }
+            
+            log(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                this.messages.innerHTML += `[${timestamp}] ${message}\n`;
+                this.messages.scrollTop = this.messages.scrollHeight;
+            }
+        }
+        
+        // Initialize client when page loads
+        window.addEventListener('load', () => {
+            window.oscClient = new OSCClient();
+        });
+    </script>
+</body>
+</html> 

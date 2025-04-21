@@ -1,140 +1,99 @@
-# Speech to OSC
+# OSC-T2S (Speech to OSC Converter)
 
-A web application that converts speech to OSC messages, allowing you to control OSC-compatible applications with your voice.
+A tool that converts speech to OSC messages, allowing you to control any OSC-compatible application with your voice.
 
 ## Features
 
-- Speech recognition using the Web Speech API
-- Support for both Google Cloud Speech Recognition and Whisper API
-- OSC message sending for transcriptions
-- OSC message receiving for remote control (start/stop recording)
-- Simple and intuitive user interface
-- Works in modern browsers (Chrome recommended)
+- Real-time speech recognition using OpenAI's Whisper API
+- OSC message broadcasting to any OSC-compatible application
+- Web interface for easy control and monitoring
+- Cross-platform support (Windows, macOS, Linux)
+- Example clients in Python, JavaScript, and Max/MSP
+
+## Prerequisites
+
+- Node.js 16 or higher
+- npm (Node Package Manager)
+- OpenAI API key for Whisper speech recognition
 
 ## Installation
 
-### Prerequisites
-
-- Node.js (v14 or higher)
-- npm (comes with Node.js)
-- A modern web browser (Chrome recommended)
-
-### Setup
-
-1. Clone or download this repository:
-   ```bash
-   git clone https://github.com/yourusername/osc-t2s.git
-   cd osc-t2s
-   ```
+1. Clone this repository:
+```bash
+git clone https://github.com/yourusername/osc-t2s.git
+cd osc-t2s
+```
 
 2. Install dependencies:
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 
-## Running the Application
+## Building Executables
 
-### Method 1: Using Node.js (Recommended)
+You can build executables for your platform using the provided build script:
 
-1. Start the server:
-   ```bash
-   npm start
-   ```
-   This runs the Node.js server that serves the web application and handles WebSocket connections.
+```bash
+./build.sh
+```
 
-2. Open your browser and navigate to:
-   ```
-   http://localhost:9527
-   ```
-
-### Method 2: Using Python's Built-in HTTP Server
-
-If you don't want to install Node.js, you can use Python's built-in HTTP server, but you'll still need to run the Node.js server for WebSocket and OSC functionality:
-
-1. Start the Node.js server in one terminal:
-   ```bash
-   npm start
-   ```
-
-2. Start the Python HTTP server in another terminal:
-   ```bash
-   # Python 3
-   python -m http.server 9527
-   
-   # Python 2
-   python -m SimpleHTTPServer 9527
-   ```
-
-3. Open your browser and navigate to:
-   ```
-   http://localhost:9527
-   ```
+This will create executables in the `dist` directory. The script will:
+1. Check for required dependencies
+2. Install necessary packages
+3. Build executables for your current platform
+4. Optionally build for all platforms (Windows, macOS, Linux)
 
 ## Usage
 
-1. Open the application in your browser
-2. Enter your API key (Google Cloud or Whisper)
-3. Configure OSC settings (address and port)
-4. Click "Start Recording" and speak
-5. Your speech will be converted to text and sent as OSC messages
+### Running from Source
 
-## OSC Settings
+1. Start the server:
+```bash
+npm start
+```
 
-- **OSC Address**: The IP address of the OSC server to send transcriptions to (default: 127.0.0.1)
-- **OSC Port**: The port number of the OSC server to send transcriptions to (default: 57120)
-- **OSC Receive Port**: The port number for receiving OSC commands (default: 12000)
+2. Open your web browser and navigate to:
+```
+http://localhost:8081
+```
 
-## OSC Messages
+3. Enter your OpenAI API key in the web interface
 
-### Sending (Transcriptions)
-- `/transcription` - Contains the transcribed text from speech recognition
+4. Click "Start Recording" to begin speech recognition
 
-### Receiving (Commands)
-- `/startRecording` - Starts the recording process
-- `/stopRecording` - Stops the recording process
+### Running from Executable
 
-## API Options
+1. Navigate to the `dist` directory
+2. Run the appropriate executable for your platform:
+   - Windows: `osc-t2s-win.exe`
+   - macOS: `osc-t2s-mac`
+   - Linux: `osc-t2s-linux`
 
-### Google Cloud Speech Recognition
+3. Open your web browser and navigate to:
+```
+http://localhost:8081
+```
 
-- Free tier available with limited usage
-- Good for general speech recognition
-- Requires a Google Cloud API key
+## OSC Message Format
 
-### Whisper API
+The application sends OSC messages with the following format:
 
-- More accurate transcription
-- Supports multiple languages
-- Requires an OpenAI API key
+- Address: `/speech` (configurable)
+- Arguments: 
+  - String: The transcribed text
+  - Float: Confidence score (0-1)
 
-## Troubleshooting
+## Example Clients
 
-### Speech Recognition Issues
+Check the `client` directory for example clients in different programming languages:
 
-- Make sure you're using a modern browser (Chrome recommended)
-- Check that your microphone is properly connected and working
-- Ensure you have granted microphone access to the website
+- Python: Simple OSC client using python-osc
+- JavaScript: Web-based client using osc.js
+- Max/MSP: Max patch for receiving OSC messages
 
-### OSC Connection Issues
+## Contributing
 
-- Verify that the OSC server is running and accessible
-- Check that the OSC address and port are correct
-- Make sure your firewall isn't blocking the connection
-- For receiving OSC commands, ensure port 12000 is open and accessible
-
-### Server Issues
-
-- If you see "Connection refused" errors, make sure the Node.js server is running
-- If you see WebSocket errors, check that the server.js file is running correctly
-- If you're using the Python HTTP server method, ensure both servers are running
-
-## Credits
-
-This project uses the following libraries:
-
-- [p5.js](https://p5js.org/) - A JavaScript library for creative coding
-- [p5js-osc](https://github.com/genekogan/p5js-osc) by [Gene Kogan](https://github.com/genekogan) - OSC library for p5.js
-- [osc.js](https://github.com/colinbdclark/osc.js) - A JavaScript implementation of the Open Sound Control protocol
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
