@@ -6,6 +6,7 @@ const FormData = require('form-data');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { exec } = require('child_process');
 
 // Configuration
 const config = {
@@ -74,6 +75,30 @@ function getLocalIpAddress() {
 	return '127.0.0.1';
 }
 
+// Function to open browser based on platform
+function openBrowser(url) {
+	const platform = process.platform;
+	let command;
+	
+	switch (platform) {
+		case 'darwin':  // macOS
+			command = `open "${url}"`;
+			break;
+		case 'win32':   // Windows
+			command = `start "${url}"`;
+			break;
+		default:        // Linux and others
+			command = `xdg-open "${url}"`;
+			break;
+	}
+	
+	exec(command, (error) => {
+		if (error) {
+			console.error('Failed to open browser:', error);
+		}
+	});
+}
+
 // Socket.io connection handling
 io.on('connection', (socket) => {
 	console.log('Client connected');
@@ -131,10 +156,14 @@ io.on('connection', (socket) => {
 // Start server
 server.listen(config.port, () => {
 	const localIp = getLocalIpAddress();
+	const url = `http://localhost:${config.port}`;
 	console.log(`Server running on port ${config.port}`);
 	console.log(`Local IP address: ${localIp}`);
 	console.log(`OSC server port: ${config.oscPort}`);
 	console.log(`OSC client port: ${config.oscClientPort}`);
 	console.log(`Access the application at: http://${localIp}:${config.port}`);
-	console.log(`Or locally at: http://localhost:${config.port}`);
+	console.log(`Or locally at: ${url}`);
+	
+	// Open browser when server starts
+	openBrowser(url);
 });
