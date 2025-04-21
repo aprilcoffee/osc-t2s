@@ -88,14 +88,42 @@
             cursor: pointer;
             color: #666;
         }
+        .api-selector {
+            margin-bottom: 15px;
+        }
+        .api-selector label {
+            display: inline-block;
+            margin-right: 15px;
+        }
+        .api-selector input[type="radio"] {
+            margin-right: 5px;
+        }
+        .api-key-input {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>OSC Text to Speech</h1>
-        <div class="input-group">
-            <label for="apiKey">Whisper API Key:</label>
-            <input type="text" id="apiKey" placeholder="Enter your Whisper API key">
+        
+        <div class="api-selector">
+            <label>
+                <input type="radio" name="apiType" value="whisper" checked> Whisper API
+            </label>
+            <label>
+                <input type="radio" name="apiType" value="google"> Google Cloud Speech Recognition
+            </label>
+        </div>
+        
+        <div class="input-group" id="whisperKeyGroup">
+            <label for="whisperApiKey">Whisper API Key:</label>
+            <input type="text" id="whisperApiKey" placeholder="Enter your Whisper API key">
+        </div>
+        
+        <div class="input-group api-key-input" id="googleKeyGroup">
+            <label for="googleApiKey">Google Cloud API Key:</label>
+            <input type="text" id="googleApiKey" placeholder="Enter your Google Cloud API key">
         </div>
         
         <div id="connectionStatus" class="disconnected">Disconnected</div>

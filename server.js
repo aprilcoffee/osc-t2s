@@ -111,6 +111,27 @@ wss.on('connection', function connection(ws) {
                 } else {
                     console.log(`No clients registered for ${clientKey}`);
                 }
+            } else if (data.type === 'transcribe') {
+                // Handle transcription request
+                const { audioData, apiType, apiKey } = data;
+                
+                if (apiType === 'whisper') {
+                    // Forward to client for Whisper API processing
+                    ws.send(JSON.stringify({
+                        type: 'transcribe',
+                        audioData,
+                        apiType: 'whisper',
+                        apiKey
+                    }));
+                } else if (apiType === 'google') {
+                    // Forward to client for Google Cloud Speech Recognition API processing
+                    ws.send(JSON.stringify({
+                        type: 'transcribe',
+                        audioData,
+                        apiType: 'google',
+                        apiKey
+                    }));
+                }
             }
         } catch (error) {
             console.error('Error processing message:', error);
