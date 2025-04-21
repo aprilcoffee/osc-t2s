@@ -20,17 +20,27 @@ function setup() {
     const wsServerInput = document.getElementById('wsServer');
     const oscAddressInput = document.getElementById('oscAddress');
     const oscPortInput = document.getElementById('oscPort');
+    const advancedToggle = document.getElementById('advancedToggle');
+    const advancedSettings = document.getElementById('advancedSettings');
 
     // Add event listeners
     startButton.addEventListener('click', startRecording);
     stopButton.addEventListener('click', stopRecording);
     apiKeyInput.addEventListener('change', (e) => apiKey = e.target.value);
-    wsServerInput.addEventListener('change', (e) => {
-        wsServer = e.target.value;
-        setupWebSocket();
-    });
+    wsServerInput.addEventListener('change', (e) => wsServer = e.target.value);
     oscAddressInput.addEventListener('change', (e) => oscAddress = e.target.value);
     oscPortInput.addEventListener('change', (e) => oscPort = parseInt(e.target.value));
+    
+    // Advanced settings toggle
+    advancedToggle.addEventListener('click', () => {
+        if (advancedSettings.style.display === 'none') {
+            advancedSettings.style.display = 'block';
+            advancedToggle.textContent = 'Hide Advanced Settings';
+        } else {
+            advancedSettings.style.display = 'none';
+            advancedToggle.textContent = 'Show Advanced Settings';
+        }
+    });
 
     // Initial WebSocket setup
     setupWebSocket();

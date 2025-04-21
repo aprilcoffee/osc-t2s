@@ -1,9 +1,9 @@
 const WebSocket = require('ws');
 const osc = require('node-osc');
 
-// Create WebSocket server that listens on all network interfaces
+// Create WebSocket server that listens on localhost only
 const wss = new WebSocket.Server({ 
-    host: '0.0.0.0',  // Listen on all network interfaces
+    host: '0.0.0.0',  // Listen only on 0.0.0.0
     port: 8080 
 });
 
@@ -84,21 +84,6 @@ wss.on('connection', function connection(ws) {
     });
 });
 
-// Get the server's IP address
-const os = require('os');
-const networkInterfaces = os.networkInterfaces();
-let serverIP = 'localhost';
-
-// Find the first non-internal IPv4 address
-Object.keys(networkInterfaces).forEach((interfaceName) => {
-    networkInterfaces[interfaceName].forEach((interface) => {
-        if (interface.family === 'IPv4' && !interface.internal) {
-            serverIP = interface.address;
-        }
-    });
-});
-
-console.log(`WebSocket server running on ${serverIP}:8080`);
-console.log('To access from other devices, use:');
-console.log(`- Web interface: http://${serverIP}:8000`);
-console.log(`- WebSocket server: ws://${serverIP}:8080`); 
+console.log('WebSocket server running on localhost:8080');
+console.log('To access the application, open:');
+console.log('http://localhost:8000'); 
