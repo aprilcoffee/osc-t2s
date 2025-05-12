@@ -1,8 +1,12 @@
-# Simple OSC Drawing Examples
+# OSC Examples
 
-This directory contains simple Processing examples for collaborative drawing using OSC.
+This directory contains various OSC examples for different purposes.
 
-## Requirements
+## Drawing Example
+
+Located in `osc-drawing/`, this example demonstrates collaborative drawing using OSC.
+
+### Requirements
 
 1. Processing IDE (https://processing.org/download)
 2. OSCP5 library for Processing
@@ -11,9 +15,9 @@ This directory contains simple Processing examples for collaborative drawing usi
    - Search for "OSCP5"
    - Install the library by "Andreas Schlegel"
 
-## Server
+### Server
 
-The server (`server/OSCServer.pde`) manages multiple clients and their drawings.
+The server (`osc-drawing/server/server.pde`) manages multiple clients and their drawings.
 
 Features:
 - Draws with local mouse (black)
@@ -21,16 +25,16 @@ Features:
 - Shows number of connected clients
 - Displays drawings from all clients
 
-## Client
+### Client
 
-The client (`client/OSCClient.pde`) connects to the server and sends drawing coordinates.
+The client (`osc-drawing/client/client.pde`) connects to the server and sends drawing coordinates.
 
 Features:
 - Connect to server with 'c' key
 - Draw with mouse (client's assigned color)
 - Shows connection status
 
-## How to Use
+### How to Use
 
 1. Open the server sketch in Processing and run it
 2. Open one or more client sketches in Processing and run them
@@ -38,15 +42,15 @@ Features:
 4. Draw in any window to see the drawings appear on the server
 5. Each client gets a unique color for their drawings
 
-## Message Types
+### Message Types
 
-### Client to Server
+#### Client to Server
 - `/connect` - Connect to server
 - `/draw` - Send drawing coordinates (x, y, prevX, prevY)
 
-### Server to Client
+#### Server to Client
 - `/connected` - Connection confirmation with assigned color (r, g, b)
 
-## Ports
+### Ports
 - Server listens on: 57120
 - Client listens on: 57121 
