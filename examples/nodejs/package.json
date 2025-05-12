@@ -1,0 +1,12 @@
+{
+  "name": "osc-client-nodejs",
+  "version": "1.0.0",
+  "description": "Node.js OSC client example for the text-to-speech bridge",
+  "main": "node_osc_client.js",
+  "scripts": {
+    "start": "node node_osc_client.js"
+  },
+  "dependencies": {
+    "osc": "^2.4.2"
+  }
+} 

@@ -3,180 +3,596 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Speech to OSC</title>
+    <title>OSC Text-to-Speech Bridge</title>
     <style>
+        :root {
+            --primary-color: #2196F3;
+            --success-color: #4CAF50;
+            --error-color: #f44336;
+            --text-color: #333;
+            --bg-color: #f5f5f5;
+            --card-bg: #ffffff;
+            --border-radius: 8px;
+            --spacing: 15px;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             max-width: 800px;
             margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+            padding: var(--spacing);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.4;
         }
+
         .container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
+            background-color: var(--card-bg);
+            padding: var(--spacing);
+            border-radius: var(--border-radius);
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .input-group {
-            margin-bottom: 15px;
+
+        h1 {
+            color: var(--primary-color);
+            margin: 0 0 15px 0;
+            text-align: center;
+            font-size: 1.8em;
         }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+
+        h3 {
+            color: var(--primary-color);
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
         }
-        input[type="text"] {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
+
+        .network-info {
+            margin: 10px 0;
+            padding: 10px;
             border-radius: 4px;
-            box-sizing: border-box;
+            background-color: #e9ecef;
+            font-family: monospace;
         }
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-right: 10px;
+
+        .network-info p {
+            margin: 5px 0;
         }
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        #startBtn {
-            background-color: #4CAF50;
-            color: white;
-        }
-        #stopBtn {
-            background-color: #f44336;
-            color: white;
-        }
-        #status {
-            margin: 15px 0;
+
+        .api-key-section {
+            margin: 10px 0;
             padding: 10px;
             border-radius: 4px;
             background-color: #f8f9fa;
         }
-        #transcription {
-            margin-top: 20px;
-            padding: 15px;
+
+        .input-group {
+            margin: 5px 0;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 3px;
+            font-weight: 500;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            min-height: 100px;
-            white-space: pre-wrap;
-        }
-        .error {
-            background-color: #ffebee;
-            color: #c62828;
-        }
-        .info {
-            background-color: #e3f2fd;
-            color: #1565c0;
-        }
-        .info-box {
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 15px;
-            margin: 15px 0;
-        }
-        .info-box h3 {
-            margin-top: 0;
-            color: #333;
-        }
-        .info-box code {
-            background-color: #e9ecef;
-            padding: 2px 4px;
-            border-radius: 3px;
             font-family: monospace;
+            font-size: 0.9em;
         }
-        .copy-btn {
-            background-color: #6c757d;
-            color: white;
-            padding: 5px 10px;
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            margin: 10px 0;
+        }
+
+        button {
+            padding: 8px 16px;
             border: none;
-            border-radius: 3px;
+            border-radius: 4px;
+            background-color: var(--primary-color);
+            color: white;
             cursor: pointer;
-            font-size: 12px;
-            margin-left: 5px;
+            transition: background-color 0.2s;
+            font-size: 0.9em;
+            min-width: 100px;
         }
-        .copy-btn:hover {
-            background-color: #5a6268;
+
+        button:hover {
+            background-color: #1976D2;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .connection-status {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .connected {
+            background-color: var(--success-color);
+        }
+
+        .disconnected {
+            background-color: var(--error-color);
+        }
+
+        .transcription {
+            min-height: 80px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        #transcriptionText {
+            font-size: 1.1em;
+            line-height: 1.4;
+        }
+
+        .streaming-text {
+            margin-top: 8px;
+            padding: 8px;
+            background-color: #E3F2FD;
+            border-radius: 4px;
+            font-style: italic;
+            color: #1565C0;
+        }
+
+        .code-block {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 8px 0;
+            white-space: pre-wrap;
+            font-size: 0.9em;
+            border: 1px solid #ddd;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
+
+        .connected-clients {
+            background: var(--bg-color);
+            border-radius: var(--border-radius);
+            padding: var(--spacing);
+            margin-top: var(--spacing);
+        }
+
+        .connected-clients .empty-state {
+            color: var(--text-color);
+            font-style: italic;
+            text-align: center;
+            margin: 0;
+        }
+
+        .client-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .client-item {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-sm);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .client-item:last-child {
+            border-bottom: none;
+        }
+
+        .client-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success-color);
+            margin-right: var(--spacing-sm);
+        }
+
+        .client-ip {
+            font-family: monospace;
+            color: var(--text-color);
+        }
+
+        .connection-steps {
+            margin-top: var(--spacing);
+        }
+
+        .connection-steps h3 {
+            color: var(--primary-color);
+            margin: 20px 0 10px 0;
+            font-size: 1.1em;
+        }
+
+        .connection-steps h3:first-child {
+            margin-top: 0;
+        }
+
+        .connection-steps .code-block {
+            margin: 10px 0;
+            padding: 12px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .connection-steps p {
+            margin: 8px 0;
+            color: var(--text-color);
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Speech to OSC</h1>
+        <h1>OSC Text-to-Speech Bridge</h1>
         
-        <div class="info-box">
-            <h3>Connection Information</h3>
-            <p>Your IP Address: <code id="ipAddress">Loading...</code></p>
-            <p>OSC Server Port: <code id="oscServerPort">12000</code></p>
-            <p>OSC Client Port: <code id="oscClientPort">57120</code></p>
-            <p>WebSocket Server: <code>ws://localhost:8081</code></p>
+        <div class="network-info">
+            <h3>Network Information</h3>
+            <p><strong>Server IP:</strong> <span id="serverIP">Loading...</span></p>
+            <p><strong>Broadcast Address:</strong> <span id="broadcastAddress">Loading...</span></p>
+            <p><strong>Network Interface:</strong> <span id="networkInterface">Loading...</span></p>
+            <p><strong>OSC Port:</strong> 57120</p>
+            <p><strong>OSC Broadcast Port:</strong> 57121</p>
         </div>
-        
-        <div class="input-group">
-            <label for="whisperKey">Whisper API Key:</label>
-            <input type="text" id="whisperKey" placeholder="Enter your Whisper API key">
+
+        <div class="api-key-section">
+            <h3>API Configuration</h3>
+            <div class="input-group">
+                <label for="whisperKey">Whisper API Key:</label>
+                <input type="text" id="whisperKey" placeholder="Enter your Whisper API key">
+            </div>
         </div>
-        
-        <div class="button-group">
+
+        <div class="controls">
             <button id="startBtn">Start Recording</button>
-            <button id="stopBtn">Stop Recording</button>
+            <button id="stopBtn" disabled>Stop Recording</button>
         </div>
-        
-        <div id="status">Ready to record</div>
-        <div id="transcription"></div>
-        
-        <div class="info-box">
-            <h3>Example OSC Client (Python)</h3>
-            <pre><code id="exampleCode">import socket
-import json
 
-# OSC client setup
-client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        <div class="transcription">
+            <h3>Transcription</h3>
+            <div id="transcriptionText">No transcription yet...</div>
+            <div id="streamingText" class="streaming-text"></div>
+        </div>
 
-# Send OSC message
-def send_osc(address, *args):
-    message = json.dumps({"address": address, "args": args})
-    client.sendto(message.encode(), ("127.0.0.1", 12000))
+        <div class="code-block">
+// OSC Connection (Max/MSP)
+udpsend <span id="oscExample">server-ip</span> 57120
 
-# Example: Start recording
-send_osc("/startRecording")
+// OSC Broadcast (Max/MSP)
+udpreceive 57121
 
-# Example: Stop recording
-send_osc("/stopRecording")</code><button class="copy-btn" onclick="copyExample()">Copy</button></pre>
+// OSC Message Handlers
+// Start Recording:
+message /startRecording
+
+// Stop Recording:
+message /stopRecording
+
+// Receive Transcription:
+route /transcription
+print
+        </div>
+
+        <div class="section">
+            <h2>OSC Connection Guide</h2>
+            <div class="connection-steps">
+                <h3>Step 1: Connect to Server</h3>
+                <p>In Max/MSP, send this message to register:</p>
+                <div class="code-block">
+message /connect
+                </div>
+                <p>You should receive a confirmation message on port 57121</p>
+
+                <h3>Step 2: Send Commands</h3>
+                <p>Use these commands to control recording:</p>
+                <div class="code-block">
+// Start recording:
+message /startRecording
+
+// Stop recording:
+message /stopRecording
+                </div>
+
+                <h3>Step 3: Receive Messages</h3>
+                <p>Listen for these messages on port 57121:</p>
+                <div class="code-block">
+// Connection status:
+route /connected
+
+// Recording status:
+route /recordingStatus
+
+// Transcription results:
+route /transcription
+                </div>
+
+                <h3>TouchDesigner Setup</h3>
+                <p>1. Create an OSC Out CHOP:</p>
+                <div class="code-block">
+// Set the following parameters:
+// - Network Address: [server-ip]
+// - Port: 57120
+// - Protocol: UDP
+                </div>
+
+                <p>2. Create an OSC In CHOP:</p>
+                <div class="code-block">
+// Set the following parameters:
+// - Port: 57121
+// - Protocol: UDP
+                </div>
+
+                <p>3. Connect to send messages:</p>
+                <div class="code-block">
+// Create a Button COMP
+// Connect to OSC Out CHOP
+// Set the message to:
+// - Address: /connect
+// - Value: 1
+
+// For recording control:
+// - Address: /startRecording or /stopRecording
+// - Value: 1
+                </div>
+
+                <p>4. Connect to receive messages:</p>
+                <div class="code-block">
+// Connect OSC In CHOP to:
+// - Select CHOP (to filter messages)
+// - Table CHOP (to display values)
+
+// Filter for these messages:
+// - /connected
+// - /recordingStatus
+// - /transcription
+                </div>
+
+                <p>5. Optional: Create a UI for control:</p>
+                <div class="code-block">
+// Create Button COMPs for:
+// - Connect
+// - Start Recording
+// - Stop Recording
+
+// Create Text COMPs to display:
+// - Connection Status
+// - Recording Status
+// - Transcription Results
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Connected Clients</h2>
+            <div id="connectedClients" class="connected-clients">
+                <p class="empty-state">No clients connected</p>
+            </div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-    <script src="http://localhost:8081/socket.io/socket.io.js"></script>
-    <script src="sketch.js"></script>
     <script>
-        // Get IP address
-        fetch('https://api.ipify.org?format=json')
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('ipAddress').textContent = data.ip;
-            })
-            .catch(error => {
-                document.getElementById('ipAddress').textContent = 'Unable to fetch IP';
-            });
+        let ws;
+        let isRecording = false;
+        let serverIP = '';
+        let broadcastAddress = '';
+        let networkInterface = '';
+        let clientIP = '';
+        let mediaRecorder = null;
+        let audioChunks = [];
+
+        function updateConnectionStatus(connected) {
+            const status = document.getElementById('connectionStatus');
+            const text = document.getElementById('connectionText');
+            if (connected) {
+                status.className = 'connection-status connected';
+                text.textContent = 'Connected';
+            } else {
+                status.className = 'connection-status disconnected';
+                text.textContent = 'Disconnected';
+            }
+        }
+
+        function updateNetworkInfo(data) {
+            serverIP = data.oscAddress;
+            broadcastAddress = data.oscBroadcastAddress;
+            networkInterface = data.networkInterface;
+            clientIP = data.clientIP;
+
+            document.getElementById('serverIP').textContent = serverIP;
+            document.getElementById('broadcastAddress').textContent = broadcastAddress;
+            document.getElementById('networkInterface').textContent = networkInterface;
+            document.getElementById('clientIP').textContent = clientIP;
+            document.getElementById('oscExample').textContent = serverIP;
+        }
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+                
+                mediaRecorder.start();
+                isRecording = true;
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('transcriptionText').textContent = 'Recording...';
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                alert('Error starting recording: ' + error.message);
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+                document.getElementById('transcriptionText').textContent = 'Processing audio...';
+                
+                // When recording stops, process the audio
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    const reader = new FileReader();
+                    
+                    reader.onloadend = () => {
+                        const base64Audio = reader.result.split(',')[1];
+                        console.log('Audio data prepared, size:', base64Audio.length);
+                        
+                        // Send audio data to server
+                        if (ws && ws.readyState === WebSocket.OPEN) {
+                            const apiKey = document.getElementById('whisperKey').value;
+                            console.log('Sending audio data to server...');
+                            ws.send(JSON.stringify({
+                                type: 'audioData',
+                                audio: base64Audio,
+                                whisperKey: apiKey
+                            }));
+                        } else {
+                            console.error('WebSocket not connected');
+                            alert('Server not connected');
+                        }
+                    };
+                    
+                    reader.readAsDataURL(audioBlob);
+                };
+            }
+        }
+
+        function connect() {
+            ws = new WebSocket('ws://localhost:8080');
             
-        // Copy example code
-        function copyExample() {
-            const code = document.getElementById('exampleCode').textContent;
-            navigator.clipboard.writeText(code).then(() => {
-                const btn = document.querySelector('.copy-btn');
-                btn.textContent = 'Copied!';
-                setTimeout(() => {
-                    btn.textContent = 'Copy';
-                }, 2000);
+            ws.onopen = () => {
+                console.log('Connected to server');
+                updateConnectionStatus(true);
+                document.getElementById('startBtn').disabled = false;
+            };
+            
+            ws.onclose = () => {
+                console.log('Disconnected from server');
+                updateConnectionStatus(false);
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = true;
+                
+                // Try to reconnect after 5 seconds
+                setTimeout(connect, 5000);
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log('Received message:', data);
+                
+                switch(data.type) {
+                    case 'registered':
+                        updateNetworkInfo(data);
+                        document.getElementById('startBtn').disabled = false;
+                        break;
+                    case 'startRecording':
+                        console.log('Received start recording command');
+                        if (!isRecording) {
+                            startRecording();
+                        }
+                        break;
+                    case 'stopRecording':
+                        console.log('Received stop recording command');
+                        if (isRecording) {
+                            stopRecording();
+                        }
+                        break;
+                    case 'transcription':
+                        if (data.isFinal) {
+                            document.getElementById('transcriptionText').textContent = data.text;
+                            document.getElementById('streamingText').textContent = '';
+                        } else {
+                            document.getElementById('streamingText').textContent = data.text;
+                        }
+                        break;
+                    case 'error':
+                        console.error('Error:', data.message);
+                        alert('Error: ' + data.message);
+                        break;
+                    case 'connectedClients':
+                        console.log('Updating connected clients:', data.clients);
+                        updateConnectedClients(data.clients);
+                        break;
+                }
+            };
+        }
+
+        // Connect when page loads
+        connect();
+
+        // Button event listeners
+        document.getElementById('startBtn').addEventListener('click', () => {
+            const apiKey = document.getElementById('whisperKey').value;
+            if (!apiKey) {
+                alert('Please enter your Whisper API key');
+                return;
+            }
+            startRecording();
+        });
+
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            stopRecording();
+        });
+
+        // Update connected clients display
+        function updateConnectedClients(clients) {
+            const container = document.getElementById('connectedClients');
+            if (!clients || clients.length === 0) {
+                container.innerHTML = '<p class="empty-state">No clients connected</p>';
+                return;
+            }
+
+            const list = document.createElement('ul');
+            list.className = 'client-list';
+            
+            clients.forEach(client => {
+                const item = document.createElement('li');
+                item.className = 'client-item';
+                item.innerHTML = `
+                    <div class="client-status"></div>
+                    <span class="client-ip">${client}</span>
+                `;
+                list.appendChild(item);
             });
+
+            container.innerHTML = '';
+            container.appendChild(list);
         }
     </script>
 </body>

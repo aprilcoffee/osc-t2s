@@ -17,10 +17,8 @@ let oscClientPortElement;
 
 // Configuration
 const config = {
-  serverUrl: 'http://localhost:8081',
-  oscAddress: '127.0.0.1',
-  oscPort: 57120,
-  oscServerPort: 12000
+  serverUrl: 'ws://localhost:8080',
+  oscPort: 57120
 };
 
 /**
@@ -37,25 +35,25 @@ function setup() {
   // Set up event listeners
   setupEventListeners();
   
-  // Initialize socket connection
-  setupSocketConnection();
+  // Initialize WebSocket connection
+  setupWebSocket();
 }
 
 /**
  * Initialize DOM elements
  */
 function initializeDOMElements() {
-  // Get DOM elements
   statusIndicator = document.getElementById('status');
   startBtn = document.getElementById('startBtn');
   stopBtn = document.getElementById('stopBtn');
   transcriptionDiv = document.getElementById('transcription');
   whisperKeyInput = document.getElementById('whisperKey');
-  ipAddressElement = document.getElementById('ipAddress');
+  ipAddressElement = document.getElementById('serverIP');
   oscServerPortElement = document.getElementById('oscServerPort');
   oscClientPortElement = document.getElementById('oscClientPort');
   
-  // Initially disable stop button
+  // Set initial button states
+  startBtn.disabled = true;
   stopBtn.disabled = true;
 }
 
@@ -63,72 +61,98 @@ function initializeDOMElements() {
  * Set up event listeners
  */
 function setupEventListeners() {
-  // API key validation
   whisperKeyInput.addEventListener('input', validateWhisperKey);
-  
-  // Button event listeners
-  startBtn.addEventListener('click', startRecording);
-  stopBtn.addEventListener('click', stopRecording);
+  startBtn.addEventListener('click', () => {
+    if (!isRecording) {
+      startRecording();
+      socket.send(JSON.stringify({ type: 'startRecording' }));
+    }
+  });
+  stopBtn.addEventListener('click', () => {
+    if (isRecording) {
+      stopRecording();
+      socket.send(JSON.stringify({ type: 'stopRecording' }));
+    }
+  });
 }
 
 /**
- * Set up socket connection
+ * Set up WebSocket connection
  */
-function setupSocketConnection() {
-  // Connect to the socket.io server
-  socket = io.connect(config.serverUrl);
+function setupWebSocket() {
+  socket = new WebSocket(config.serverUrl);
   
-  // Handle connection events
-  socket.on('connect', () => {
-    console.log('Connected to OSC bridge');
-    updateStatus('Connected to OSC bridge', 'info');
-  });
+  socket.onopen = () => {
+    console.log('Connected to server');
+    updateStatus('Connected to server', 'info');
+    startBtn.disabled = false;
+  };
   
-  socket.on('disconnect', () => {
-    console.log('Disconnected from OSC bridge');
-    updateStatus('Disconnected from OSC bridge', 'error');
-  });
-  
-  // Handle configuration from server
-  socket.on('config', (data) => {
-    console.log('Received configuration:', data);
-    config.oscPort = data.oscPort || config.oscPort;
-    config.oscServerPort = data.oscClientPort || config.oscServerPort;
-    
-    // Update UI with configuration
-    if (oscServerPortElement) {
-      oscServerPortElement.textContent = config.oscServerPort;
+  socket.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      console.log('Received message from server:', data);
+      
+      if (data.type === 'transcription') {
+        // Update transcription display
+        transcriptionDiv.textContent = data.text;
+        updateStatus('Transcription received', 'success');
+        console.log('Transcription:', data.text);
+      } else if (data.type === 'error') {
+        updateStatus(data.message, 'error');
+        console.error('Server error:', data.message);
+      } else if (data.type === 'registered') {
+        console.log('Registered with server:', data);
+        updateStatus('Connected to server', 'success');
+        // Update server IP address
+        if (data.oscAddress) {
+          ipAddressElement.textContent = data.oscAddress;
+          console.log('Server IP address updated:', data.oscAddress);
+        }
+        // Sync recording state with server
+        if (data.isRecording !== isRecording) {
+          if (data.isRecording) {
+            startRecording();
+          } else {
+            stopRecording();
+          }
+        }
+      } else if (data.type === 'osc') {
+        // Handle OSC messages
+        console.log('Received OSC message:', data.address, data.value);
+        if (data.address === '/transcription') {
+          transcriptionDiv.textContent = data.value;
+          updateStatus('Transcription received via OSC', 'success');
+        }
+      } else if (data.type === 'startRecording') {
+        if (!isRecording) {
+          startRecording();
+        }
+      } else if (data.type === 'stopRecording') {
+        if (isRecording) {
+          stopRecording();
+        }
+      } else {
+        console.log('Other message type:', data.type, data);
+      }
+    } catch (error) {
+      console.error('Error parsing message:', error);
+      console.error('Raw message:', event.data);
+      updateStatus('Error processing server response', 'error');
     }
-    if (oscClientPortElement) {
-      oscClientPortElement.textContent = config.oscPort;
-    }
-    if (ipAddressElement && data.localIp) {
-      ipAddressElement.textContent = data.localIp;
-    }
-  });
+  };
   
-  // Handle incoming OSC messages
-  socket.on('osc', (msg) => {
-    console.log('Received OSC message:', msg);
-    
-    // Handle specific OSC messages
-    if (msg[0] === '/startRecording') {
-      startRecording();
-    } else if (msg[0] === '/stopRecording') {
-      stopRecording();
-    }
-  });
+  socket.onerror = (error) => {
+    console.error('WebSocket error:', error);
+    updateStatus('Connection error', 'error');
+  };
   
-  // Handle Whisper API results
-  socket.on('transcription', (data) => {
-    console.log('Received transcription:', data);
-    updateTranscription(data.text);
-  });
-
-  socket.on('error', (error) => {
-    console.error('Error from server:', error);
-    updateStatus(error.message || error, 'error');
-  });
+  socket.onclose = () => {
+    console.log('Disconnected from server');
+    updateStatus('Disconnected from server', 'error');
+    startBtn.disabled = true;
+    stopBtn.disabled = true;
+  };
 }
 
 /**
@@ -161,10 +185,26 @@ async function startRecording() {
       
       reader.onloadend = () => {
         const base64Audio = reader.result.split(',')[1];
-        socket.emit('audioData', {
-          audio: base64Audio,
-          whisperKey: whisperKey
-        });
+        console.log('Audio data prepared, size:', base64Audio.length);
+        
+        // Send audio data to server
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          console.log('Sending audio data to server...');
+          socket.send(JSON.stringify({
+            type: 'audioData',
+            audio: base64Audio,
+            whisperKey: whisperKey
+          }));
+          updateStatus('Sending audio to server...', 'info');
+        } else {
+          console.error('WebSocket not connected');
+          updateStatus('Server not connected', 'error');
+        }
+      };
+      
+      reader.onerror = (error) => {
+        console.error('Error reading audio data:', error);
+        updateStatus('Error processing audio', 'error');
       };
       
       reader.readAsDataURL(audioBlob);
@@ -173,11 +213,13 @@ async function startRecording() {
     // Start recording
     mediaRecorder.start();
     isRecording = true;
-    updateUI();
-    updateStatus('Recording...');
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+    updateStatus('Recording...', 'info');
+    
   } catch (error) {
     console.error('Error starting recording:', error);
-    updateStatus(`Error: ${error.message}`);
+    updateStatus('Error starting recording: ' + error.message, 'error');
   }
 }
 
@@ -187,56 +229,32 @@ async function startRecording() {
 function stopRecording() {
   if (mediaRecorder && isRecording) {
     mediaRecorder.stop();
+    isRecording = false;
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    updateStatus('Processing audio...', 'info');
   }
-  isRecording = false;
-  updateUI();
-  updateStatus('Processing audio...');
-}
-
-/**
- * Send OSC message
- * @param {string} text - Text to send as OSC message
- */
-function sendOSCMessage(text) {
-  if (socket && socket.connected) {
-    try {
-      socket.emit('send', {
-        address: '/speech',
-        args: [text]
-      });
-      console.log(`Sent OSC message: /speech = ${text}`);
-    } catch (error) {
-      console.error('Error sending OSC message:', error);
-    }
-  } else {
-    console.error('Socket not connected');
-  }
-}
-
-/**
- * Update transcription display
- * @param {string} text - Transcription text
- */
-function updateTranscription(text) {
-  transcriptionDiv.textContent = text;
-  sendOSCMessage(text);
-  updateStatus('Ready to record');
-}
-
-/**
- * Update UI elements based on current state
- */
-function updateUI() {
-  startBtn.disabled = isRecording || !whisperKey;
-  stopBtn.disabled = !isRecording;
 }
 
 /**
  * Update status message
- * @param {string} message - Status message
- * @param {string} type - Message type (info, error)
  */
 function updateStatus(message, type = 'info') {
   statusIndicator.textContent = message;
   statusIndicator.className = type;
-} 
+}
+
+/**
+ * Clean up resources
+ */
+function cleanup() {
+  if (socket) {
+    socket.close();
+  }
+  if (mediaRecorder && isRecording) {
+    mediaRecorder.stop();
+  }
+}
+
+// Register cleanup function
+window.addEventListener('beforeunload', cleanup); 
